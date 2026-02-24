@@ -19,3 +19,10 @@ add_executable(main
 target_link_libraries(main
     compilador
 )
+
+if(MSVC)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+endif()
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/googletest-1.17.0)
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)

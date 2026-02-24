@@ -19,3 +19,8 @@ cmake --build build
 ```bash
 ./build/main
 ```
+
+# Rodar testes
+```bash
+cd build/tests && ctest
+```
