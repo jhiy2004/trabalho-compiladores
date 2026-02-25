@@ -22,6 +22,9 @@ struct Token {
     TokenType type;
     std::string lexeme;
 
+    Token(TokenType t, std::string l)
+        : type(t), lexeme(std::move(l)) {}
+
     bool operator==(const Token& rhs) const {
         return (type == rhs.type) && (lexeme == rhs.lexeme);
     }
