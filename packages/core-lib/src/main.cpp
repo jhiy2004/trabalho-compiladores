@@ -1,11 +1,14 @@
 #include "compilador.h"
-#include <cstdio>
+#include <iostream>
 
 int main() {
-    int a = 1;
-    int b = 2;
-
-    printf("%d + %d = %d\n", a, b, add(a, b));
-
+    LexicalAnalysis analise("(1.2+23) / 123.41111 * 0");
+    bool success = analise.analyze();
+    if (success) {
+        analise.print();
+    } else {
+        std::cout << "Falha na analise";
+    }
+    
     return 0;
 }

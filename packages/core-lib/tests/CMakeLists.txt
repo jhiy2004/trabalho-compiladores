@@ -4,6 +4,7 @@ enable_testing()
 
 add_executable(compilador_test
     ${CMAKE_CURRENT_SOURCE_DIR}/compilador_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/lexer.cpp
 )
 target_link_libraries(compilador_test
     GTest::gtest_main
