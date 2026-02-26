@@ -15,11 +15,15 @@ jobs:
           build-dir: ./packages/core-lib/build
           generator: Ninja
           cxx-compiler: clang++
+
+      - name: Tar build files
+        run: tar -cvf build_files.tar ./packages/core-lib/build
+
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: core-lib-build-output
-          path: ./packages/core-lib/build
+          path: build_files.tar
           retention-days: 1
 
   test-core-lib:
@@ -30,7 +34,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: core-lib-build-output
-          path: ./packages/core-lib/build/
+          path: ./packages/core-lib
+
+      - name: Extract Tar Files
+        run: tar -xvf ./packages/core-lib/build_files.tar -C ./packages/core-lib/
 
       - name: Permissions
         run: ls -la ./packages/core-lib/build/tests
