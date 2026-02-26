@@ -17,7 +17,7 @@ jobs:
           cxx-compiler: clang++
 
       - name: Tar build files
-        run: tar -cvf build_files.tar ./packages/core-lib/build
+        run: tar -cvf build_files.tar -C ./packages/core-lib build
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
