@@ -32,5 +32,8 @@ jobs:
           name: core-lib-build-output
           path: ./packages/core-lib/build/
 
+      - name: Permissions
+        run: ls -la ./packages/core-lib/build/tests
+
       - name: Test Core-Lib
         run: cd ./packages/core-lib/build/tests && ctest
