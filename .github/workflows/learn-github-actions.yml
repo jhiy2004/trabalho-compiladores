@@ -1,14 +1,42 @@
-name: learn-github-actions
-run-name: ${{ github.actor }} is learning GitHub Actions
+name: core-lib-actions
+run-name: Core-Lib Actions
 on: [push]
 jobs:
-  check-bats-version:
+  build-core-lib:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./packages/core-lib
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm install -g bats
-      - run: bats -v
+      - name: Checkout Project
+        uses: actions/checkout@v5
 
+      - name: Build Project
+        uses: threeal/cmake-action@v2.1.0
+        with:
+          source-dir: .
+          build-dir: build
+          generator: Ninja
+          cxx-compiler: clang++
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-lib-build-output
+          path: ./packages/core-lib/build
+          retention-days: 1
+
+  test-core-lib:
+    needs: build-core-lib
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./packages/core-lib/build
+    steps:
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: core-lib-build-output
+          path: ./packages/core-lib/build/
+
+      - name: Test Core-Lib
+        run: ctest
