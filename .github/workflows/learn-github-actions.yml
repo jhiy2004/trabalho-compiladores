@@ -1,6 +1,11 @@
 name: core-lib-actions
 run-name: Core-Lib Actions
-on: [push]
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    
 jobs:
   build-core-lib:
     runs-on: ubuntu-latest
