@@ -4,9 +4,6 @@ on: [push]
 jobs:
   build-core-lib:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./packages/core-lib
     steps:
       - name: Checkout Project
         uses: actions/checkout@v5
@@ -14,8 +11,8 @@ jobs:
       - name: Build Project
         uses: threeal/cmake-action@v2.1.0
         with:
-          source-dir: .
-          build-dir: build
+          source-dir: ./packages/core-lib
+          build-dir: ./packages/core-lib/build
           generator: Ninja
           cxx-compiler: clang++
       - name: Upload Build Artifacts
@@ -28,9 +25,6 @@ jobs:
   test-core-lib:
     needs: build-core-lib
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./packages/core-lib/build
     steps:
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
@@ -39,4 +33,4 @@ jobs:
           path: ./packages/core-lib/build/
 
       - name: Test Core-Lib
-        run: ctest
+        run: cd ./packages/core-lib/build/tests && ctest
