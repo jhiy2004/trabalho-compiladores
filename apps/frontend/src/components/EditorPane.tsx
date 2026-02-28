@@ -122,7 +122,11 @@ export default function EditorPane({ code, setCode, onCompile }: Props) {
           </button>
 
 
-          <button className="opacity-70 hover:opacity-100" type="button">
+          <button
+            className="opacity-70 hover:opacity-100"
+            type="button"
+            onClick={handleSave}
+          >
             Salvar
           </button>
         </div>
