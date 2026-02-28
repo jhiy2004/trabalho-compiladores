@@ -1,9 +1,5 @@
-function App() {
-  return (
-    <div>
-      <h1>Hello World</h1>
-    </div>
-  )
-}
+import CodeEditorPage from "./pages/CodeEditorPage";
 
-export default App
+export default function App() {
+  return <CodeEditorPage />;
+}
