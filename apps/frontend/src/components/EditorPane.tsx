@@ -142,8 +142,8 @@ export default function EditorPane({ code, setCode, onCompile }: Props) {
           theme="vs-light"
           defaultLanguage="javascript"
           value={code}
-          onChange={(v) => setCode(v ?? "")}
-          onMount={(ed) => (editorRef.current = ed)}
+          onChange={(v: string | undefined) => setCode(v ?? "")}
+          onMount={(ed: editor.IStandaloneCodeEditor) => (editorRef.current = ed)}
           options={{
             minimap: { enabled: false },
             fontSize: 15,
