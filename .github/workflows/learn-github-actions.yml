@@ -1,17 +1,18 @@
 name: core-lib-actions
 run-name: Core-Lib Actions
+
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-    
+
 jobs:
   build-core-lib:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Project
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Build Project
         uses: threeal/cmake-action@v2.1.0
@@ -35,6 +36,8 @@ jobs:
     needs: build-core-lib
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -44,9 +47,6 @@ jobs:
       - name: Extract Tar Files
         run: tar -xvf ./packages/core-lib/build_files.tar -C ./packages/core-lib/
 
-      - name: Permissions
-        run: ls -la ./packages/core-lib/build/tests
-
       - name: Test Core-Lib
         run: cd ./packages/core-lib/build/tests && ctest
 
@@ -55,23 +55,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Wait for Render Deployment
-        uses: bounceapp/render-action@0.12.0
+        uses: Bounceapp/render-action@0.12.0
         with:
           render-token: ${{ secrets.RENDER_TOKEN }}
           service-id: srv-d6hie0hdrdic73cnd990
           retries: 20
           wait: 16000
           sleep: 30000
-          deploy-backend:
-    
+
   deploy-frontend:
     needs: test-core-lib
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for Vercel Deployment
-      - uses: amondnet/vercel-action@v41.1.4
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v41.1.4
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID}}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID}}
-          working-directory: ./sub-directory
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: .
