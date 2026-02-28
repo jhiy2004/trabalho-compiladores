@@ -4,5 +4,10 @@
         "apps/frontend",
         "apps/backend",
         "packages/node-addon" 
-    ]
+    ],
+    "scripts": {
+        "frontend_build": "npm run build -w apps/frontend",
+        "frontend_dev": "npm run dev -w apps/frontend",
+        "backend_dev": "npm run dev -w apps/backend"
+    }
 }
