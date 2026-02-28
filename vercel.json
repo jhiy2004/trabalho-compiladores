@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json", 
+  "public": false,
+  "github": {
+    "enabled": false
+  },
+  "buildCommand": "npm run frontend_build",
+  "devCommand": "npm run frontend_dev",
+  "installCommand": "npm ci",
+  "outputDirectory": "./apps/frontend/dist"
+}

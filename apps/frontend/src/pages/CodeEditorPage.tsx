@@ -30,12 +30,13 @@ if (x < 10) {
   );
 
   const [tokens, setTokens] = useState<TokenRow[]>([]);
-  const [symbols, setSymbols] = useState<SymbolRow[]>([]);
+  const [symbols, ] = useState<SymbolRow[]>([]);
   const [logs, setLogs] = useState<string[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
   const [semanticErrors, setSemanticErrors] = useState<string[]>([]);
 
   const linesTyped = useMemo(() => code.split("\n").length, [code]);
+  void linesTyped;
 
   const pick = useCallback((v: ViewKey) => {
     setView(v);
