@@ -1,0 +1,51 @@
+name: core-lib-actions
+run-name: Core-Lib Actions
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    
+jobs:
+  build-core-lib:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Project
+        uses: actions/checkout@v5
+
+      - name: Build Project
+        uses: threeal/cmake-action@v2.1.0
+        with:
+          source-dir: ./packages/core-lib
+          build-dir: ./packages/core-lib/build
+          generator: Ninja
+          cxx-compiler: clang++
+
+      - name: Tar build files
+        run: tar -cvf build_files.tar -C ./packages/core-lib build
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-lib-build-output
+          path: build_files.tar
+          retention-days: 1
+
+  test-core-lib:
+    needs: build-core-lib
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: core-lib-build-output
+          path: ./packages/core-lib
+
+      - name: Extract Tar Files
+        run: tar -xvf ./packages/core-lib/build_files.tar -C ./packages/core-lib/
+
+      - name: Permissions
+        run: ls -la ./packages/core-lib/build/tests
+
+      - name: Test Core-Lib
+        run: cd ./packages/core-lib/build/tests && ctest

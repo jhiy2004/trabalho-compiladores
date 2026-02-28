@@ -1,6 +1,10 @@
 {
+  "main": "index.js",
   "dependencies": {
     "node-addon-api": "^8.5.0",
     "node-gyp": "^12.2.0"
+  },
+  "scripts": {
+    "install": "node-gyp rebuild"
   }
 }

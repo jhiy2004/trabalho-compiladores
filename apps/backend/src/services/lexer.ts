@@ -1,4 +1,4 @@
-const addon = require("./addon.node") as any;
+const addon = require('node-addon')
 
 const tokenTypeMap: Record<number, string> = Object.fromEntries(
   Object.entries(addon.TokenType).map(([key, value]) => [value, key])

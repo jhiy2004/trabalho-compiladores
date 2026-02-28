@@ -1,0 +1,8 @@
+{
+    "name": "my-workspaces-powered-project",
+    "workspaces": [
+        "apps/frontend",
+        "apps/backend",
+        "packages/node-addon" 
+    ]
+}
