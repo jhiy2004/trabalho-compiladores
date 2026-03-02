@@ -22,12 +22,14 @@ enum class TokenType {
 struct Token {
     TokenType type;
     std::string lexeme;
+    unsigned int line;
+    unsigned int col; 
 
-    Token(TokenType t, std::string_view l)
-        : type(t), lexeme(l) {}
+    Token(TokenType t, std::string_view le, unsigned int li, unsigned int c)
+        : type(t), lexeme(le), line(li), col(c) {}
 
     bool operator==(const Token& rhs) const {
-        return (type == rhs.type) && (lexeme == rhs.lexeme);
+        return (type == rhs.type) && (lexeme == rhs.lexeme) && (line == rhs.line) && (col == rhs.col);
     }
 };
 

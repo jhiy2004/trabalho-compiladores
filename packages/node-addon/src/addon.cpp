@@ -70,6 +70,8 @@ Napi::Value LexicalAnalysisWrapper::GetTokens(const Napi::CallbackInfo& info) {
 
         obj.Set("type", static_cast<int>(tokens[i].type));
         obj.Set("lexeme", tokens[i].lexeme);
+        obj.Set("line", tokens[i].line);
+        obj.Set("col", tokens[i].col);
 
         arr.Set(i, obj);
     }

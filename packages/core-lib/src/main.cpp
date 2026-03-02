@@ -2,7 +2,7 @@
 #include <iostream>
 
 int main() {
-    LexicalAnalysis analise("(1.2+23) / 123.41111 * 0");
+    LexicalAnalysis analise("10+2\n5.2-3.1");
     bool success = analise.analyze();
     if (success) {
         analise.print();
