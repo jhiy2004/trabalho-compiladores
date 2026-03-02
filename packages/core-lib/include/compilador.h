@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <iostream>
 #include <vector>
 #include <optional>
@@ -22,8 +23,8 @@ struct Token {
     TokenType type;
     std::string lexeme;
 
-    Token(TokenType t, std::string l)
-        : type(t), lexeme(std::move(l)) {}
+    Token(TokenType t, std::string_view l)
+        : type(t), lexeme(l) {}
 
     bool operator==(const Token& rhs) const {
         return (type == rhs.type) && (lexeme == rhs.lexeme);
@@ -32,7 +33,7 @@ struct Token {
 
 class LexicalAnalysis {
 public:
-    LexicalAnalysis(const std::string& text) {
+    LexicalAnalysis(std::string_view text) {
         _text = text;
     }
 
