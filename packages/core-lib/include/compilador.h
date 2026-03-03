@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <iostream>
 #include <vector>
 #include <optional>
@@ -21,18 +22,20 @@ enum class TokenType {
 struct Token {
     TokenType type;
     std::string lexeme;
+    unsigned int line;
+    unsigned int col; 
 
-    Token(TokenType t, std::string l)
-        : type(t), lexeme(std::move(l)) {}
+    Token(TokenType t, std::string_view le, unsigned int li, unsigned int c)
+        : type(t), lexeme(le), line(li), col(c) {}
 
     bool operator==(const Token& rhs) const {
-        return (type == rhs.type) && (lexeme == rhs.lexeme);
+        return (type == rhs.type) && (lexeme == rhs.lexeme) && (line == rhs.line) && (col == rhs.col);
     }
 };
 
 class LexicalAnalysis {
 public:
-    LexicalAnalysis(const std::string& text) {
+    LexicalAnalysis(std::string_view text) {
         _text = text;
     }
 
