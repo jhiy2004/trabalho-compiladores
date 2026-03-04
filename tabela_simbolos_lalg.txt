@@ -1,0 +1,45 @@
+Palavras reservadas:
+    program
+    procedure
+    var
+    int
+    boolean
+    read
+    write
+    true
+    false
+    begin
+    end
+    if
+    then
+    else
+    while
+    do
+    or
+    div
+    and
+    not
+
+;
+.
+=
+<>
+<
+<=
+>=
+>
++
+-
+*
+(
+)
+_
+[0-9]
+[a-z]
+[A-Z]
+{
+}
+//
+int_num_max: ate 10 digitos
+real_num_max: ate 10 digitos antes do . e ate 10 digitos apos .
+id_max: ate 10 caracteres

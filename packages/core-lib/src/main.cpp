@@ -1,14 +1,24 @@
-#include "compilador.h"
+#include "compilador_lalg.h"
 #include <iostream>
 
-int main() {
-    LexicalAnalysis analise("10+2\n5.2-3.1");
-    bool success = analise.analyze();
-    if (success) {
-        analise.print();
-    } else {
-        std::cout << "Falha na analise";
+void print_tokens(const std::vector<Token>& tokens) {
+    for (Token t : tokens) {
+        std::cout << "Lexema: " << t.lexeme << ";" << t.line << ":" << t.col << "\n";
     }
-    
+}
+
+int main() {
+    LexicalAnalysisLALG test("program correto;\nint a, b, c;\nboolean d, e, f;\n");
+
+    test.get_token();
+    test.get_token();
+    test.get_token();
+    test.get_token();
+    test.get_token();
+
+    const std::vector<Token> tokens = test.get_tokens();
+
+    print_tokens(tokens);
+
     return 0;
 }
