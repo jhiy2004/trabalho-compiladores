@@ -15,6 +15,18 @@ int main() {
     test.get_token();
     test.get_token();
     test.get_token();
+    test.get_token();
+    test.get_token();
+    test.get_token();
+    test.get_token();
+    test.get_token();
+    test.get_token();
+    test.get_token();
+    test.get_token();
+    test.get_token();
+    test.get_token();
+    test.get_token();
+    test.get_token();
 
     const std::vector<Token> tokens = test.get_tokens();
 

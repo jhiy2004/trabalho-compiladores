@@ -89,14 +89,19 @@ std::optional<Token> LexicalAnalysisLALG::get_token() {
     } else if(is_op(first_c)) {
         c = _text[curr_pos];
         while (curr_pos < text_size && (is_op(c))) {
-            buffer += c;
-            if (auto it = operators.find(buffer); it != operators.end()) {
-                tokens.emplace_back(it->second, it->first, start_line, start_col);
-                return tokens.back();
+            if (auto it = operators.find(buffer + c); it == operators.end()) {
+                break; 
             }
+            buffer += c;
             c = _text[++curr_pos];
             curr_pos++;
         }
+
+        if (auto it = operators.find(buffer); it != operators.end()) {
+            tokens.emplace_back(it->second, it->first, start_line, start_col);
+            return tokens.back();
+        }
+
         if (auto it = operators.find(buffer); it != operators.end()) {
             if(it->second == TokenType::SingleCommentOp) {
                 c = _text[curr_pos];
