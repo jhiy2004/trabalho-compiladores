@@ -17,6 +17,7 @@ enum class TokenTypeCalc {
     OpDiv,
     OpenPar,
     ClosePar,
+    Unk
 };
 
 struct TokenCalc {

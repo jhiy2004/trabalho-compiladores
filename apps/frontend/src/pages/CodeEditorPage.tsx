@@ -9,24 +9,24 @@ import SemanticView from "../components/SemanticView";
 import type { ViewKey } from "../ui/views";
 import type { LexResponse, TokenRow, SymbolRow } from "../types";
 
-const API_BASE = "http://localhost:3001";
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 export default function CodeEditorPage() {
   const [view, setView] = useState<ViewKey>("code");
 
   const [code, setCode] = useState<string>(
-`let x = 1;
-let y = 2;
-
-function sum(a, b) {
-  let s = a + b;
-  return s;
-}
-
-if (x < 10) {
-  let z = sum(x, y);
-  print(z);
-}`
+`program ola_mundo;
+    int alfa, beta;
+    boolean omega;
+procedure soma(a, b: int);
+begin
+    write(a + b)
+end;
+begin
+    alfa := 1;
+    beta := 2;
+    soma(alfa, beta)
+end.`
   );
 
   const [tokens, setTokens] = useState<TokenRow[]>([]);
