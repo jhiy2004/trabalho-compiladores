@@ -1,9 +1,24 @@
 #include <gtest/gtest.h>
+#include <filesystem>
 #include "compilador_lalg.h"
 #include "util.h"
 
+void compare_tokens(
+    const std::vector<Token>& tokens,
+    const std::vector<Token>& expected)
+{
+    ASSERT_EQ(tokens.size(), expected.size());
+
+    for (size_t i = 0; i < tokens.size(); i++) {
+        EXPECT_EQ(tokens[i], expected[i])
+            << "Erro no token " << i
+            << "\nObtido: " << tokens[i]
+            << "\nEsperado: " << expected[i];
+    }
+}
+
 TEST(LALGTest, TestComTxt) {
-    std::string content = parse_file_to_string("/home/joseyamaoki/Documents/trabalho-compiladores/packages/core-lib/tests/examples/com.txt");
+    std::string content = parse_file_to_string(std::filesystem::path(EXAMPLES_DIR) / "com.txt");
 
     LexicalAnalysisLALG analise(content);
     std::vector<Token> tokens = analise.tokenize_all();
@@ -23,9 +38,9 @@ TEST(LALGTest, TestComTxt) {
 
         {TokenType::BooleanWord,"boolean",3,1},
         {TokenType::Id,"d",3,9},
-        {TokenType::CommaOp,",",2,6},
+        {TokenType::CommaOp,",",3,10},
         {TokenType::Id,"e",3,12},
-        {TokenType::CommaOp,",",2,9},
+        {TokenType::CommaOp,",",3,13},
         {TokenType::Id,"f",3,15},
         {TokenType::SemiColonOp,";",3,16},
 
@@ -35,7 +50,7 @@ TEST(LALGTest, TestComTxt) {
         {TokenType::VarWord,"var",7,16},
         {TokenType::Id,"a1",7,20},
         {TokenType::ColonOp,":",7,23},
-        {TokenType::Id,"int",7,25},
+        {TokenType::IntWord,"int",7,25},
         {TokenType::CloseParOp,")",7,28},
         {TokenType::SemiColonOp,";",7,29},
 
@@ -49,9 +64,9 @@ TEST(LALGTest, TestComTxt) {
 
         {TokenType::BooleanWord,"boolean",9,1},
         {TokenType::Id,"d",9,9},
-        {TokenType::CommaOp,",",2,6},
+        {TokenType::CommaOp,",",9,10},
         {TokenType::Id,"e",9,12},
-        {TokenType::CommaOp,",",2,9},
+        {TokenType::CommaOp,",",9,13},
         {TokenType::Id,"f",9,15},
         {TokenType::SemiColonOp,";",9,16},
 
@@ -140,8 +155,8 @@ TEST(LALGTest, TestComTxt) {
         {TokenType::DivWord,"div",29,8},
         {TokenType::Id,"b",29,12},
 
-        {TokenType::EndWord,"end",30,1},
-        {TokenType::SemiColonOp,";",30,4},
+        {TokenType::EndWord,"end",30,2},
+        {TokenType::SemiColonOp,";",30,5},
 
         {TokenType::WhileWord,"while",31,2},
         {TokenType::OpenParOp,"(",31,8},
@@ -170,11 +185,11 @@ TEST(LALGTest, TestComTxt) {
         {TokenType::SubOp,"-",35,7},
         {TokenType::Num,"1",35,8},
 
-        {TokenType::EndWord,"end",36,1},
+        {TokenType::EndWord,"end",36,2},
 
         {TokenType::EndWord,"end",37,1},
         {TokenType::DotOp,".",37,4},
     };
 
-    EXPECT_EQ(tokens, expected);
+    compare_tokens(tokens, expected);
 }

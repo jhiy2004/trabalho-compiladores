@@ -12,6 +12,7 @@ add_executable(compilador_test
 target_link_libraries(compilador_test
     GTest::gtest_main
     compilador
+    examples
 )
 
 include(GoogleTest)

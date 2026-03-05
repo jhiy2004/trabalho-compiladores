@@ -1,10 +1,11 @@
 #pragma once
 
 #include <string>
-#include <string_view>
-
-#include <fstream>
-#include <sstream>
+#include <filesystem>
 #include <iostream>
+#include "compilador_lalg.h"
 
-std::string parse_file_to_string(std::string_view filepath);
+std::ostream& operator<<(std::ostream& os, const Token& t);
+std::string parse_file_to_string(const std::filesystem::path& filepath);
+std::string type_to_str(TokenType t);
+void print_tokens(const std::vector<Token>& tokens);

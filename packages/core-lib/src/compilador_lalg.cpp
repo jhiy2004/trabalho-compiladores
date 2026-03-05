@@ -1,5 +1,4 @@
 #include "compilador_lalg.h"
-#include <iostream>
 
 const std::unordered_map<std::string, TokenType>
 LexicalAnalysisLALG::operators = {
@@ -53,16 +52,19 @@ std::optional<Token> LexicalAnalysisLALG::get_token() {
         return std::nullopt;
     }
 
-    char c = _text[curr_pos];
-    while(curr_pos < text_size && is_separator(c)) {
+    while(curr_pos < text_size) {
+        char c = _text[curr_pos];
+
+        if (!is_separator(c))
+            break;
+
         if (is_newline(c)) {
             curr_line++;
             curr_col = 1;
-            c = _text[++curr_pos];
-            continue;
+        } else {
+            curr_col++; 
         }
-        c = _text[++curr_pos];
-        curr_col++; 
+        curr_pos++;
     }
 
     if(curr_pos >= text_size) {
@@ -75,13 +77,18 @@ std::optional<Token> LexicalAnalysisLALG::get_token() {
 
     const char first_c = _text[curr_pos++];
     buffer += first_c;
-    std::cout << "==========\n" << first_c << " = "<< ((first_c == start_multiline_comment) ? "true" : "false") << "\n==========\n";
+
+    curr_col++;
     if(is_letter(first_c)) {
-        c = _text[curr_pos];
-        while(curr_pos < text_size && (is_letter(c) || is_digit(c))) {
+        while(curr_pos < text_size) {
+            char c = _text[curr_pos];
+
+            if (!is_letter(c) && !is_digit(c))
+                break;
+
             buffer += c;
             curr_col++;
-            c = _text[++curr_pos];
+            curr_pos++;
         }
 
         if(auto it = reserved_words.find(buffer); it != reserved_words.end()) {
@@ -92,27 +99,31 @@ std::optional<Token> LexicalAnalysisLALG::get_token() {
         tokens.emplace_back(TokenType::Id, buffer, start_line, start_col);
         return tokens.back();
     } else if(is_op(first_c)) {
-        c = _text[curr_pos];
-        while (curr_pos < text_size && (is_op(c))) {
+        while (curr_pos < text_size) {
+            char c = _text[curr_pos];
+
+            if (!is_op(c))
+                break;
+
             if (auto it = operators.find(buffer + c); it == operators.end()) {
                 break; 
             }
             buffer += c;
-            c = _text[++curr_pos];
+            curr_col++;
             curr_pos++;
         }
 
         if (auto it = operators.find(buffer); it != operators.end()) {
-            tokens.emplace_back(it->second, it->first, start_line, start_col);
-            return tokens.back();
-        }
-
-        if (auto it = operators.find(buffer); it != operators.end()) {
             if(it->second == TokenType::SingleCommentOp) {
-                c = _text[curr_pos];
-                while(curr_pos < text_size && (!is_newline(c))) {
-                    c = _text[++curr_pos];
+                while(curr_pos < text_size) {
+                    char c = _text[curr_pos];
+
+                    if (is_newline(c))
+                        break;
+
+                    curr_pos++;
                 }
+                curr_pos++;
                 curr_col = 1;
                 curr_line++;
                 return get_token();
@@ -121,25 +132,37 @@ std::optional<Token> LexicalAnalysisLALG::get_token() {
             return tokens.back();
         }
     } else if(is_digit(first_c)) {
-        c = _text[curr_pos];
-        while (curr_pos < text_size && (is_digit(c))) {
+        while (curr_pos < text_size) {
+            char c = _text[curr_pos];
+
+            if (!is_digit(c))
+                break;
+
             buffer += c;
-            c = _text[++curr_pos];
+            curr_pos++;
+            curr_col++;
         }
         tokens.emplace_back(TokenType::Num, buffer, start_line, start_col);
         return tokens.back();
     } else if(first_c == start_multiline_comment) {
-        std::cout << "\n\naqui\n\n";
-        c = _text[curr_pos];
-        while(curr_pos < text_size && c != end_multiline_comment) {
+        while(curr_pos < text_size) {
+            char c = _text[curr_pos];
+
+            if (c == end_multiline_comment)
+                break;
+
             if (is_newline(c)) {
                 curr_line++;
                 curr_col = 1;
             }
-            c = _text[++curr_pos];
+            curr_pos++;
         }
 
-        if (c == end_multiline_comment) {
+        if (curr_pos >= text_size) {
+            return std::nullopt;
+        }
+
+        if (_text[curr_pos] == end_multiline_comment) {
             curr_col++;
             curr_pos++;
         }
@@ -170,7 +193,7 @@ bool LexicalAnalysisLALG::is_letter(char c) {
 }
 
 bool LexicalAnalysisLALG::is_op(char c) {
-    return c == '+' || c == '-' || c == '*' || c == '=' || c == '<' || c == '>' || c == '(' || c == ')' || c == ';' || c == '.' || '/' || ',' || ':';
+    return c == '+' || c == '-' || c == '*' || c == '=' || c == '<' || c == '>' || c == '(' || c == ')' || c == ';' || c == '.' || c == '/' || c == ',' || c == ':';
 }
 
 bool LexicalAnalysisLALG::is_newline(char c) {

@@ -11,6 +11,11 @@ add_library(compilador STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/util.cpp
 )
 
+add_library(examples INTERFACE)
+target_compile_definitions(examples
+    INTERFACE EXAMPLES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/examples"
+)
+
 target_include_directories(compilador
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
@@ -19,8 +24,10 @@ add_executable(main
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
 )
 
+
 target_link_libraries(main
     compilador
+    examples
 )
 
 if(MSVC)
