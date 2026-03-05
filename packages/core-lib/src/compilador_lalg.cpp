@@ -1,10 +1,12 @@
 #include "compilador_lalg.h"
+#include <iostream>
 
 const std::unordered_map<std::string, TokenType>
 LexicalAnalysisLALG::operators = {
     { ";", TokenType::SemiColonOp },
     { ".", TokenType::DotOp },
     { "=", TokenType::EqualOp },
+    { ":=", TokenType::AssignOp },
     { "<>", TokenType::DiffOp },
     { "<", TokenType::LessOp },
     { "<=", TokenType::LessEqualOp },
@@ -12,6 +14,8 @@ LexicalAnalysisLALG::operators = {
     { ">", TokenType::GreaterOp },
     { "+", TokenType::AddOp },
     { "-", TokenType::SubOp },
+    { ",", TokenType::CommaOp },
+    { ":", TokenType::ColonOp },
     { "*", TokenType::MulOp },
     { "(", TokenType::OpenParOp },
     { ")", TokenType::CloseParOp },
@@ -71,6 +75,7 @@ std::optional<Token> LexicalAnalysisLALG::get_token() {
 
     const char first_c = _text[curr_pos++];
     buffer += first_c;
+    std::cout << "==========\n" << first_c << " = "<< ((first_c == start_multiline_comment) ? "true" : "false") << "\n==========\n";
     if(is_letter(first_c)) {
         c = _text[curr_pos];
         while(curr_pos < text_size && (is_letter(c) || is_digit(c))) {
@@ -124,14 +129,21 @@ std::optional<Token> LexicalAnalysisLALG::get_token() {
         tokens.emplace_back(TokenType::Num, buffer, start_line, start_col);
         return tokens.back();
     } else if(first_c == start_multiline_comment) {
+        std::cout << "\n\naqui\n\n";
         c = _text[curr_pos];
         while(curr_pos < text_size && c != end_multiline_comment) {
-            if (c == is_newline(c)) {
+            if (is_newline(c)) {
                 curr_line++;
                 curr_col = 1;
             }
             c = _text[++curr_pos];
         }
+
+        if (c == end_multiline_comment) {
+            curr_col++;
+            curr_pos++;
+        }
+
         return get_token();
     }
 
@@ -158,7 +170,7 @@ bool LexicalAnalysisLALG::is_letter(char c) {
 }
 
 bool LexicalAnalysisLALG::is_op(char c) {
-    return c == '+' || c == '-' || c == '*' || c == '=' || c == '<' || c == '>' || c == '(' || c == ')' || c == ';' || c == '.' || '/';
+    return c == '+' || c == '-' || c == '*' || c == '=' || c == '<' || c == '>' || c == '(' || c == ')' || c == ';' || c == '.' || '/' || ',' || ':';
 }
 
 bool LexicalAnalysisLALG::is_newline(char c) {
