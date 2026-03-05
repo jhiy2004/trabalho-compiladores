@@ -1,4 +1,5 @@
-#include <cctype>
+#pragma once
+
 #include <string_view>
 #include <string>
 #include <unordered_map>
@@ -27,8 +28,11 @@ enum class TokenType {
     AndWord,
     NotWord,
     SemiColonOp,
+    ColonOp,
+    CommaOp,
     DotOp,
     EqualOp,
+    AssignOp,
     DiffOp,
     LessOp,
     LessEqualOp,

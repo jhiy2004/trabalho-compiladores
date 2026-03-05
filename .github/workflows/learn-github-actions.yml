@@ -48,7 +48,7 @@ jobs:
         run: tar -xvf ./packages/core-lib/build_files.tar -C ./packages/core-lib/
 
       - name: Test Core-Lib
-        run: cd ./packages/core-lib/build/tests && ctest
+        run: cd ./packages/core-lib/build/tests && ctest --output-on-failure
 
   deploy-backend:
     needs: test-core-lib
