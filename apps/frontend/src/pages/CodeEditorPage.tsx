@@ -61,7 +61,14 @@ if (x < 10) {
         return;
       }
 
-      setTokens(data.tokens ?? []);
+      const mappedTokens: TokenRow[] = (data.tokens ?? []).map((t: any) => ({
+        lexema: t.lexeme,
+        token: t.type,
+        posicao: `${t.line}:${t.col}`,
+        // simbolo: t.lexeme,
+      }));
+
+      setTokens(mappedTokens);
       // ajustar depois conforme o backend:
       // setSymbols(data.symbols ?? []);
       setLogs((prev) => [...prev, ...(data.logs ?? ["OK"])]);
