@@ -1,32 +1,14 @@
 #include "compilador_lalg.h"
 #include <iostream>
-
-void print_tokens(const std::vector<Token>& tokens) {
-    for (Token t : tokens) {
-        std::cout << "Lexema: " << t.lexeme << ";" << t.line << ":" << t.col << "\n";
-    }
-}
+#include <filesystem>
+#include "util.h"
 
 int main() {
-    LexicalAnalysisLALG test("program correto;\nint a, b, c;\nboolean d, e, f;\n");
+    std::string teste = parse_file_to_string(std::filesystem::path(EXAMPLES_DIR) / "com.txt");
 
-    test.get_token();
-    test.get_token();
-    test.get_token();
-    test.get_token();
-    test.get_token();
-    test.get_token();
-    test.get_token();
-    test.get_token();
-    test.get_token();
-    test.get_token();
-    test.get_token();
-    test.get_token();
-    test.get_token();
-    test.get_token();
-    test.get_token();
-    test.get_token();
-    test.get_token();
+    LexicalAnalysisLALG test(teste);
+
+    test.tokenize_all();
 
     const std::vector<Token> tokens = test.get_tokens();
 
