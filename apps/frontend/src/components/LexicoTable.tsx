@@ -1,6 +1,9 @@
 import type { TokenRow } from "../types";
 
 export default function LexicoTable({ tokens }: { tokens: TokenRow[] }) {
+  const errorCount = tokens.filter((token) => token.token == 'Unk').length
+  const tokenCount = tokens.length
+
   return (
     <div className="p-6">
       <div className="bg-cardSoft rounded-xl2 shadow-soft overflow-hidden">
@@ -8,12 +11,18 @@ export default function LexicoTable({ tokens }: { tokens: TokenRow[] }) {
           <div>
             <div className="text-lg font-semibold">Léxico</div>
           </div>
+          
+          <div className='flex gap-3'>
+            <div className="text-xs px-3 py-1 rounded-full bg-blue-300 border border-black/5 gap-2">
+              {errorCount} erros
+            </div>
 
-          <div className="text-xs px-3 py-1 rounded-full bg-tintSoft/70 border border-black/5">
-            {tokens.length} tokens
+            <div className="text-xs px-3 py-1 rounded-full bg-tintSoft/70 border border-black/5">
+              {tokenCount} tokens
+            </div>
           </div>
         </div>
-        <div className="overflow-auto">
+        <div className="overflow-auto max-h-[90vh]">
           <table className="w-full text-sm">
             <thead className="bg-tintSoft/60">
               <tr>
@@ -28,7 +37,11 @@ export default function LexicoTable({ tokens }: { tokens: TokenRow[] }) {
               {tokens.map((t, i) => (
                 <tr
                   key={i}
-                  className="border-t border-black/5 hover:bg-black/5 transition"
+                  className={`border-t border-black/5 transition ${
+                    t.token === "Unk"
+                      ? "bg-blue-100 hover:bg-blue-200"
+                      : "hover:bg-black/5"
+                  }`}
                 >
                   <td className="p-3 opacity-60">{i + 1}</td>
                   <td className="p-3 font-mono">{t.lexema}</td>

@@ -8,8 +8,20 @@ bool LexicalAnalysisCalc::analyze() {
     unsigned int col{1};
 
     for (char c : _text) {
-        if (auto search = valid_chars.find(c); search == std::string::npos) 
-            return false;
+        if (auto search = valid_chars.find(c); search == std::string::npos) {
+            if (!temp.empty()) {
+                if (auto search = temp.find('.'); search != std::string::npos) {
+                    _tokens.emplace_back(TokenTypeCalc::RealId, temp, start_line, start_col);
+                } else {
+                    _tokens.emplace_back(TokenTypeCalc::IntId, temp, start_line, start_col);
+                }
+                temp.clear();
+            }
+
+            _tokens.emplace_back(TokenTypeCalc::Unk, std::string(1, c), line, col);
+            col++;
+            continue;
+        }
 
         if (temp.empty()) {
             start_line = line;
@@ -86,7 +98,8 @@ std::string LexicalAnalysisCalc::token_type_to_str(TokenTypeCalc type) {
         case TokenTypeCalc::OpDiv: return "OpDiv";
         case TokenTypeCalc::OpenPar: return "OpenPar";
         case TokenTypeCalc::ClosePar: return "ClosePar";
-        default: return "Unk";
+        case TokenTypeCalc::Unk: return "Unknown";
+        default: return "Unknown";
     }
 }
 

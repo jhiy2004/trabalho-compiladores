@@ -94,6 +94,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     tokenType.Set("OpDiv", (int)TokenTypeCalc::OpDiv);
     tokenType.Set("OpenPar", (int)TokenTypeCalc::OpenPar);
     tokenType.Set("ClosePar", (int)TokenTypeCalc::ClosePar);
+    tokenType.Set("Unk", (int)TokenTypeCalc::Unk);
 
     exports.Set("TokenTypeCalc", tokenType);
 

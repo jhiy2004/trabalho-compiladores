@@ -144,7 +144,7 @@ export default function EditorPane({ code, setCode, onCompile }: Props) {
         <Editor
           height="100%"
           theme="vs-light"
-          defaultLanguage="javascript"
+          defaultLanguage="pascal"
           value={code}
           onChange={(v: string | undefined) => setCode(v ?? "")}
           onMount={(ed: editor.IStandaloneCodeEditor) => (editorRef.current = ed)}
