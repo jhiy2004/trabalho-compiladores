@@ -18,30 +18,30 @@ Napi::Number AddWrapped(const Napi::CallbackInfo& info) {
     return Napi::Number::New(env, result);
 }
 
-class LexicalAnalysisWrapper : public Napi::ObjectWrap<LexicalAnalysisWrapper> {
+class LexicalAnalysisCalcWrapper : public Napi::ObjectWrap<LexicalAnalysisCalcWrapper> {
 public:
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
-    LexicalAnalysisWrapper(const Napi::CallbackInfo& info);
+    LexicalAnalysisCalcWrapper(const Napi::CallbackInfo& info);
 
 private:
     Napi::Value Analyze(const Napi::CallbackInfo& info);
     Napi::Value GetTokens(const Napi::CallbackInfo& info);
 
-    std::unique_ptr<LexicalAnalysis> lexer;
+    std::unique_ptr<LexicalAnalysisCalc> lexer;
 };
 
-Napi::Object LexicalAnalysisWrapper::Init(Napi::Env env, Napi::Object exports) {
-    Napi::Function func = DefineClass(env, "LexicalAnalysis", {
-        InstanceMethod("analyze", &LexicalAnalysisWrapper::Analyze),
-        InstanceMethod("get_tokens", &LexicalAnalysisWrapper::GetTokens),
+Napi::Object LexicalAnalysisCalcWrapper::Init(Napi::Env env, Napi::Object exports) {
+    Napi::Function func = DefineClass(env, "LexicalAnalysisCalc", {
+        InstanceMethod("analyze", &LexicalAnalysisCalcWrapper::Analyze),
+        InstanceMethod("get_tokens", &LexicalAnalysisCalcWrapper::GetTokens),
     });
 
-    exports.Set("LexicalAnalysis", func);
+    exports.Set("LexicalAnalysisCalc", func);
     return exports;
 }
 
-LexicalAnalysisWrapper::LexicalAnalysisWrapper(const Napi::CallbackInfo& info)
-    : Napi::ObjectWrap<LexicalAnalysisWrapper>(info)
+LexicalAnalysisCalcWrapper::LexicalAnalysisCalcWrapper(const Napi::CallbackInfo& info)
+    : Napi::ObjectWrap<LexicalAnalysisCalcWrapper>(info)
 {
     Napi::Env env = info.Env();
 
@@ -51,15 +51,15 @@ LexicalAnalysisWrapper::LexicalAnalysisWrapper(const Napi::CallbackInfo& info)
     }
 
     std::string input = info[0].As<Napi::String>();
-    lexer = std::make_unique<LexicalAnalysis>(input);
+    lexer = std::make_unique<LexicalAnalysisCalc>(input);
 }
 
-Napi::Value LexicalAnalysisWrapper::Analyze(const Napi::CallbackInfo& info) {
+Napi::Value LexicalAnalysisCalcWrapper::Analyze(const Napi::CallbackInfo& info) {
     bool result = lexer->analyze();
     return Napi::Boolean::New(info.Env(), result);
 }
 
-Napi::Value LexicalAnalysisWrapper::GetTokens(const Napi::CallbackInfo& info) {
+Napi::Value LexicalAnalysisCalcWrapper::GetTokens(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
     const auto& tokens = lexer->get_tokens();
@@ -82,20 +82,20 @@ Napi::Value LexicalAnalysisWrapper::GetTokens(const Napi::CallbackInfo& info) {
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set("add", Napi::Function::New(env, AddWrapped));
    
-    LexicalAnalysisWrapper::Init(env, exports);
+    LexicalAnalysisCalcWrapper::Init(env, exports);
     
     Napi::Object tokenType = Napi::Object::New(env);
 
-    tokenType.Set("IntId", (int)TokenType::IntId);
-    tokenType.Set("RealId", (int)TokenType::RealId);
-    tokenType.Set("OpAdd", (int)TokenType::OpAdd);
-    tokenType.Set("OpSub", (int)TokenType::OpSub);
-    tokenType.Set("OpMul", (int)TokenType::OpMul);
-    tokenType.Set("OpDiv", (int)TokenType::OpDiv);
-    tokenType.Set("OpenPar", (int)TokenType::OpenPar);
-    tokenType.Set("ClosePar", (int)TokenType::ClosePar);
+    tokenType.Set("IntId", (int)TokenTypeCalc::IntId);
+    tokenType.Set("RealId", (int)TokenTypeCalc::RealId);
+    tokenType.Set("OpAdd", (int)TokenTypeCalc::OpAdd);
+    tokenType.Set("OpSub", (int)TokenTypeCalc::OpSub);
+    tokenType.Set("OpMul", (int)TokenTypeCalc::OpMul);
+    tokenType.Set("OpDiv", (int)TokenTypeCalc::OpDiv);
+    tokenType.Set("OpenPar", (int)TokenTypeCalc::OpenPar);
+    tokenType.Set("ClosePar", (int)TokenTypeCalc::ClosePar);
 
-    exports.Set("TokenType", tokenType);
+    exports.Set("TokenTypeCalc", tokenType);
 
     return exports;
 }
