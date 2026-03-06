@@ -15,18 +15,7 @@ export default function CodeEditorPage() {
   const [view, setView] = useState<ViewKey>("code");
 
   const [code, setCode] = useState<string>(
-`program ola_mundo;
-    int alfa, beta;
-    boolean omega;
-procedure soma(a, b: int);
-begin
-    write(a + b)
-end;
-begin
-    alfa := 1;
-    beta := 2;
-    soma(alfa, beta)
-end.`
+`(1 + 1) / 3 * 9`
   );
 
   const [tokens, setTokens] = useState<TokenRow[]>([]);
