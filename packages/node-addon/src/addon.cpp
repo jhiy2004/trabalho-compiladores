@@ -199,6 +199,7 @@ Napi::Object createTokenTypeCalcObject(Napi::Env env) {
     obj.Set("OpDiv", (int)TokenTypeCalc::OpDiv);
     obj.Set("OpenPar", (int)TokenTypeCalc::OpenPar);
     obj.Set("ClosePar", (int)TokenTypeCalc::ClosePar);
+    obj.Set("Unk", (int)TokenTypeCalc::Unk);
 
     return obj;
 }
