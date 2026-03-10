@@ -159,7 +159,8 @@ std::optional<Token> LexicalAnalysisLALG::get_token() {
         }
 
         if (curr_pos >= text_size) {
-            return std::nullopt;
+            tokens.emplace_back(TokenType::UNK, "malformed_multiline_comment", start_line, start_col);
+            return tokens.back();
         }
 
         if (_text[curr_pos] == end_multiline_comment) {
