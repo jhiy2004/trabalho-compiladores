@@ -4,7 +4,7 @@
 #include "util.h"
 
 int main() {
-    std::string teste = parse_file_to_string(std::filesystem::path(EXAMPLES_DIR) / "com.txt");
+    std::string teste = parse_file_to_string(std::filesystem::path(EXAMPLES_DIR) / "overflow_int.txt");
 
     LexicalAnalysisLALG test(teste);
 
