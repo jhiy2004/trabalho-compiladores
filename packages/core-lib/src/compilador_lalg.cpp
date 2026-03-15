@@ -80,7 +80,7 @@ std::optional<Token> LexicalAnalysisLALG::get_token() {
 
     curr_col++;
     if(is_letter(first_c)) {
-        while(curr_pos < text_size) {
+        while(curr_pos < text_size && buffer.size() < max_identifier_size) {
             char c = _text[curr_pos];
 
             if (!is_letter(c) && !is_digit(c))
@@ -132,7 +132,7 @@ std::optional<Token> LexicalAnalysisLALG::get_token() {
             return tokens.back();
         }
     } else if(is_digit(first_c)) {
-        while (curr_pos < text_size) {
+        while (curr_pos < text_size && buffer.size() < max_num_size) {
             char c = _text[curr_pos];
 
             if (!is_digit(c))
@@ -159,7 +159,8 @@ std::optional<Token> LexicalAnalysisLALG::get_token() {
         }
 
         if (curr_pos >= text_size) {
-            return std::nullopt;
+            tokens.emplace_back(TokenType::UNK, "malformed_multiline_comment", start_line, start_col);
+            return tokens.back();
         }
 
         if (_text[curr_pos] == end_multiline_comment) {

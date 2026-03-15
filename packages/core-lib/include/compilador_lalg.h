@@ -90,6 +90,9 @@ private:
     static constexpr char start_multiline_comment = '{';
     static constexpr char end_multiline_comment = '}';
 
+    static constexpr unsigned int max_identifier_size = 10;
+    static constexpr unsigned int max_num_size = 10;
+
     std::string _text;
     std::size_t curr_pos{0};
     unsigned int curr_line{1};
