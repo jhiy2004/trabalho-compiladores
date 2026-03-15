@@ -16,10 +16,12 @@ import {
 type Props = {
   code: string;
   setCode: (v: string) => void;
+  language: string
+  setLanguage: (v: string) => void;
   onCompile: () => void;
 };
 
-export default function EditorPane({ code, setCode, onCompile }: Props) {
+export default function EditorPane({ code, setCode, language, setLanguage, onCompile }: Props) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -130,6 +132,16 @@ export default function EditorPane({ code, setCode, onCompile }: Props) {
             Salvar
           </button>
         </div>
+
+        <select
+            id="seletorLinguagem"
+            className="bg-accentStrong text-white px-5 py-2 rounded-full shadow-soft hover:opacity-95"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+        >
+            <option value="lalg"> LALG </option>
+            <option value="calc"> Calculadora </option>
+        </select>
 
         <button
           type="button"
