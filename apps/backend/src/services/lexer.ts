@@ -1,7 +1,11 @@
 const addon = require("node-addon");
 
-const tokenTypeMap: Record<number, string> = Object.fromEntries(
+const tokenTypeMapLalg: Record<number, string> = Object.fromEntries(
   Object.entries(addon.TokenType).map(([key, value]) => [value, key]),
+);
+
+const tokenTypeMapCalc: Record<number, string> = Object.fromEntries(
+  Object.entries(addon.TokenTypeCalc).map(([key, value]) => [value, key]),
 );
 
 export function lexSourceCalc(source: string) {
@@ -10,7 +14,7 @@ export function lexSourceCalc(source: string) {
   if (lex.analyze()) {
     return lex.get_tokens().map((token: any) => ({
       ...token,
-      type: tokenTypeMap[token.type] ?? token.type,
+      type: tokenTypeMapCalc[token.type] ?? token.type,
     }));
   }
 
@@ -22,6 +26,6 @@ export function lexSourceLALG(source: string) {
 
   return lex.tokenizeAll().map((token: any) => ({
     ...token,
-    type: tokenTypeMap[token.type] ?? token.type,
+    type: tokenTypeMapLalg[token.type] ?? token.type,
   }));
 }
