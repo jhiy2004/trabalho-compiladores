@@ -1,7 +1,7 @@
 import type { TokenRow } from "../types";
 
 export default function LexicoTable({ tokens }: { tokens: TokenRow[] }) {
-  const errorCount = tokens.filter((token) => token.token == 'Unk').length
+  const errorCount = tokens.filter((token) => token.token.toLowerCase() == 'unk').length
   const tokenCount = tokens.length
 
   return (
@@ -38,7 +38,7 @@ export default function LexicoTable({ tokens }: { tokens: TokenRow[] }) {
                 <tr
                   key={i}
                   className={`border-t border-black/5 transition ${
-                    t.token === "Unk"
+                    t.token.toLowerCase() === "unk"
                       ? "bg-blue-100 hover:bg-blue-200"
                       : "hover:bg-black/5"
                   }`}

@@ -14,6 +14,8 @@ const API_BASE = import.meta.env.VITE_API_BASE;
 export default function CodeEditorPage() {
   const [view, setView] = useState<ViewKey>("code");
 
+  const [language, setLanguage] = useState("lalg");
+
   const [code, setCode] = useState<string>(
 `(1 + 1) / 3 * 9`
   );
@@ -37,7 +39,7 @@ export default function CodeEditorPage() {
     setLogs((prev) => [...prev, "Compilando..."]);
 
     try {
-      const res = await fetch(`${API_BASE}/api/lex`, {
+      const res = await fetch(`${API_BASE}/api/lex/${language}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ source: code }),
@@ -66,7 +68,7 @@ export default function CodeEditorPage() {
     } catch {
       setErrors(["Erro de rede: não consegui chamar o backend."]);
     }
-  }, [code]);
+  }, [code, language]);
 
   return (
     <div className="flex h-screen bg-bgSoft text-ink overflow-hidden">
@@ -76,7 +78,7 @@ export default function CodeEditorPage() {
       <div className="flex-1 min-w-0">
         {view === "code" && (
           <div className="flex flex-col h-full">
-            <EditorPane code={code} setCode={setCode} onCompile={handleCompile} />
+            <EditorPane code={code} setCode={setCode} language={language} setLanguage={setLanguage} onCompile={handleCompile} />
             <BottomTabs logs={logs} errors={errors} />
           </div>
         )}
