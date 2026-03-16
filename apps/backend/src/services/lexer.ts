@@ -9,7 +9,8 @@ const tokenTypeMapCalc: Record<number, string> = Object.fromEntries(
 );
 
 export function lexSourceCalc(source: string) {
-  const lex = new addon.LexicalAnalysisCalc(source);
+  const normalized = source.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const lex = new addon.LexicalAnalysisCalc(normalized);
 
   if (lex.analyze()) {
     return lex.get_tokens().map((token: any) => ({
@@ -22,7 +23,8 @@ export function lexSourceCalc(source: string) {
 }
 
 export function lexSourceLALG(source: string) {
-  const lex = new addon.LexicalAnalysisLALG(source);
+  const normalized = source.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const lex = new addon.LexicalAnalysisLALG(normalized);
 
   return lex.tokenizeAll().map((token: any) => ({
     ...token,

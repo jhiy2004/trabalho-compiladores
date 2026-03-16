@@ -1,18 +1,19 @@
-#include "compilador_lalg.h"
+#include "compilador.h"
 #include <iostream>
 #include <filesystem>
 #include "util.h"
 
 int main() {
-    std::string teste = parse_file_to_string(std::filesystem::path(EXAMPLES_DIR) / "overflow_int.txt");
+    /* std::string teste = parse_file_to_string(std::filesystem::path(EXAMPLES_DIR) / "overflow_int.txt"); */
+    std::string teste = "(1 + 1) / 3 * 9\n   \n\n\n\n   p";
 
-    LexicalAnalysisLALG test(teste);
+    LexicalAnalysisCalc test(teste);
 
-    test.tokenize_all();
+    test.analyze();
 
-    const std::vector<Token> tokens = test.get_tokens();
+    const std::vector<TokenCalc> tokens = test.get_tokens();
 
-    print_tokens(tokens);
+    print_tokens_calc(tokens);
 
     return 0;
 }
