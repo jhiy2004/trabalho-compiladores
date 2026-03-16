@@ -52,6 +52,40 @@ std::string type_to_str(TokenType t) {
     }
 }
 
+std::string type_calc_to_str(TokenTypeCalc t) {
+    switch (t) {
+        case TokenTypeCalc::IntId: return "IntId";
+        case TokenTypeCalc::RealId: return "RealId";
+        case TokenTypeCalc::OpAdd: return "OpAdd";
+        case TokenTypeCalc::OpSub: return "OpSub";
+        case TokenTypeCalc::OpMul: return "OpMul";
+        case TokenTypeCalc::OpDiv: return "OpDiv";
+        case TokenTypeCalc::OpenPar: return "OpenPar";
+        case TokenTypeCalc::ClosePar: return "ClosePar";
+        case TokenTypeCalc::Unk: return "Unk";
+
+        default: return "UNKNOWN_TOKEN";
+    }
+}
+
+void print_tokens_calc(const std::vector<TokenCalc>& tokens) {
+    std::cout << std::left
+          << std::setw(20) << "Tipo"
+          << std::setw(20) << "Lexema"
+          << std::setw(10) << "Linha"
+          << std::setw(10) << "Coluna"
+          << ")\n";
+    std::cout << std::string(60, '-') << "\n";
+    for (const TokenCalc& token : tokens) {
+        std::cout << std::left
+                  << std::setw(20) << type_calc_to_str(token.type)
+                  << std::setw(20) << token.lexeme
+                  << std::setw(10) << token.line
+                  << std::setw(10) << token.col
+                  << "\n";
+    }
+}
+
 
 void print_tokens(const std::vector<Token>& tokens) {
     if (tokens.empty()) {

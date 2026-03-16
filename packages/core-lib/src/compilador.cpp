@@ -29,17 +29,19 @@ bool LexicalAnalysisCalc::analyze() {
         }
 
         if (c == '\n'){
+            if(!temp.empty()){
                 if (auto search = temp.find('.'); search != std::string::npos) {
                     _tokens.emplace_back(TokenTypeCalc::RealId, temp, start_line, start_col);
                 } else {
                     _tokens.emplace_back(TokenTypeCalc::IntId, temp, start_line, start_col);
                 }
                 temp.clear();
-                
-                line++;
-                col = 1;
-                continue;
             }
+                
+            line++;
+            col = 1;
+            continue;
+        }
 
         if (c == ' ' || c == '\t'){
             
