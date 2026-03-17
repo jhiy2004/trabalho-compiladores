@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import LeftRail from "../components/LeftRail";
 import EditorPane from "../components/EditorPane";
 import BottomTabs from "../components/BottomTabs";
@@ -20,6 +20,9 @@ export default function CodeEditorPage() {
 `(1 + 1) / 3 * 9`
   );
 
+  const [charging, setCharging] = useState(false);
+  const [compiled, setCompiled] = useState(false);
+
   const [tokens, setTokens] = useState<TokenRow[]>([]);
   const [symbols, ] = useState<SymbolRow[]>([]);
   const [logs, setLogs] = useState<string[]>([]);
@@ -37,6 +40,7 @@ export default function CodeEditorPage() {
     setErrors([]);
     setSemanticErrors([]);
     setLogs((prev) => [...prev, "Compilando..."]);
+    setCharging(true);
 
     try {
       const res = await fetch(`${API_BASE}/api/lex/${language}`, {
@@ -63,12 +67,22 @@ export default function CodeEditorPage() {
       // ajustar depois conforme o backend:
       // setSymbols(data.symbols ?? []);
       setLogs((prev) => [...prev, ...(data.logs ?? ["OK"])]);
+      setCharging(false);
+      setCompiled(true);
       setErrors(data.errors ?? []);
       // setSemanticErrors(data.semanticErrors ?? []);
     } catch {
       setErrors(["Erro de rede: não consegui chamar o backend."]);
     }
   }, [code, language]);
+
+  useEffect(() => {
+    if(compiled){
+      setTimeout(() => {
+        setCompiled(false);
+      }, 2000)
+    }
+  }, [compiled])
 
   return (
     <div className="flex h-screen bg-bgSoft text-ink overflow-hidden">
@@ -78,8 +92,16 @@ export default function CodeEditorPage() {
       <div className="flex-1 min-w-0">
         {view === "code" && (
           <div className="flex flex-col h-full">
-            <EditorPane code={code} setCode={setCode} language={language} setLanguage={setLanguage} onCompile={handleCompile} />
-            <BottomTabs logs={logs} errors={errors} />
+            <EditorPane
+              code={code}
+              setCode={setCode}
+              language={language}
+              setLanguage={setLanguage}
+              charging={charging}
+              compiled={compiled}
+              onCompile={handleCompile} />
+            <BottomTabs logs={logs} errors={errors}
+            />
           </div>
         )}
 
