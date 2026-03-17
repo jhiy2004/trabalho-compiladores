@@ -148,7 +148,7 @@ export default function EditorPane({ code, setCode, language, setLanguage, charg
         <button
           type="button"
           onClick={onCompile}
-          className={`bg-${compiled ? "green-500" : "accentStrong"} text-white px-5 py-2 rounded-full shadow-soft hover:opacity-95 flex gap-2 items-center`}
+          className={`${compiled ? "bg-green-500" : "bg-accentStrong"} text-white px-5 py-2 rounded-full shadow-soft hover:opacity-95 flex gap-2 items-center`}
         >
           {charging && (
           <svg className="animate-spin h-8 w-8 text-white-500 mr-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

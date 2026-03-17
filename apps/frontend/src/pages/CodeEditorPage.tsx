@@ -17,7 +17,43 @@ export default function CodeEditorPage() {
   const [language, setLanguage] = useState("lalg");
 
   const [code, setCode] = useState<string>(
-`(1 + 1) / 3 * 9`
+`program correto;
+int a, b, c;
+boolean d, e, f;
+
+{Comentário correto}
+
+procedure proc(var a1 : int);
+int a, b, c;
+boolean d, e, f;
+begin
+	a:=1;
+	if (a<1)
+		a:=12
+end;
+
+begin
+	a:=2;
+	b:=10;
+	c:=11;
+	a:=b+c;
+	d:=true;
+	e:=false;
+	f:=true;
+	//comentario de linha
+	if (d)
+	begin
+		a:=20;
+		b:=10*c;
+		c:=a div b
+	end;
+	while (a>1)
+	begin
+		if (b>10)
+			b:=2;
+		a:=a-1
+	end
+end.`
   );
 
   const [charging, setCharging] = useState(false);
@@ -41,6 +77,7 @@ export default function CodeEditorPage() {
     setSemanticErrors([]);
     setLogs((prev) => [...prev, "Compilando..."]);
     setCharging(true);
+    const start = Date.now();
 
     try {
       const res = await fetch(`${API_BASE}/api/lex/${language}`, {
@@ -67,12 +104,18 @@ export default function CodeEditorPage() {
       // ajustar depois conforme o backend:
       // setSymbols(data.symbols ?? []);
       setLogs((prev) => [...prev, ...(data.logs ?? ["OK"])]);
-      setCharging(false);
-      setCompiled(true);
       setErrors(data.errors ?? []);
       // setSemanticErrors(data.semanticErrors ?? []);
     } catch {
       setErrors(["Erro de rede: não consegui chamar o backend."]);
+    } finally {
+      const elapsed = Date.now() - start;
+      const MIN_TIME = 800;
+
+      setTimeout(() => {
+        setCharging(false);
+        setCompiled(true);
+      }, Math.max(0, MIN_TIME - elapsed));
     }
   }, [code, language]);
 
