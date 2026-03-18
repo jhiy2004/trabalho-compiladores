@@ -100,22 +100,18 @@ end.`
         // simbolo: t.lexeme,
       }));
 
-      setTokens(mappedTokens);
-      // ajustar depois conforme o backend:
-      // setSymbols(data.symbols ?? []);
-      setLogs((prev) => [...prev, ...(data.logs ?? ["OK"])]);
-      setErrors(data.errors ?? []);
-      // setSemanticErrors(data.semanticErrors ?? []);
-    } catch {
-      setErrors(["Erro de rede: não consegui chamar o backend."]);
-    } finally {
       const elapsed = Date.now() - start;
       const MIN_TIME = 800;
 
       setTimeout(() => {
         setCharging(false);
         setCompiled(true);
+        setTokens(mappedTokens);
+        setLogs((prev) => [...prev, ...(data.logs ?? ["OK"])]);
+        setErrors(data.errors ?? []);
       }, Math.max(0, MIN_TIME - elapsed));
+    } catch {
+      setErrors(["Erro de rede: não consegui chamar o backend."]);
     }
   }, [code, language]);
 
