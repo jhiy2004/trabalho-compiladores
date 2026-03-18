@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import LeftRail from "../components/LeftRail";
 import EditorPane from "../components/EditorPane";
 import BottomTabs from "../components/BottomTabs";
@@ -17,8 +17,47 @@ export default function CodeEditorPage() {
   const [language, setLanguage] = useState("lalg");
 
   const [code, setCode] = useState<string>(
-`(1 + 1) / 3 * 9`
+`program correto;
+int a, b, c;
+boolean d, e, f;
+
+{Comentário correto}
+
+procedure proc(var a1 : int);
+int a, b, c;
+boolean d, e, f;
+begin
+	a:=1;
+	if (a<1)
+		a:=12
+end;
+
+begin
+	a:=2;
+	b:=10;
+	c:=11;
+	a:=b+c;
+	d:=true;
+	e:=false;
+	f:=true;
+	//comentario de linha
+	if (d)
+	begin
+		a:=20;
+		b:=10*c;
+		c:=a div b
+	end;
+	while (a>1)
+	begin
+		if (b>10)
+			b:=2;
+		a:=a-1
+	end
+end.`
   );
+
+  const [charging, setCharging] = useState(false);
+  const [compiled, setCompiled] = useState(false);
 
   const [tokens, setTokens] = useState<TokenRow[]>([]);
   const [symbols, ] = useState<SymbolRow[]>([]);
@@ -37,6 +76,8 @@ export default function CodeEditorPage() {
     setErrors([]);
     setSemanticErrors([]);
     setLogs((prev) => [...prev, "Compilando..."]);
+    setCharging(true);
+    const start = Date.now();
 
     try {
       const res = await fetch(`${API_BASE}/api/lex/${language}`, {
@@ -59,16 +100,28 @@ export default function CodeEditorPage() {
         // simbolo: t.lexeme,
       }));
 
-      setTokens(mappedTokens);
-      // ajustar depois conforme o backend:
-      // setSymbols(data.symbols ?? []);
-      setLogs((prev) => [...prev, ...(data.logs ?? ["OK"])]);
-      setErrors(data.errors ?? []);
-      // setSemanticErrors(data.semanticErrors ?? []);
+      const elapsed = Date.now() - start;
+      const MIN_TIME = 800;
+
+      setTimeout(() => {
+        setCharging(false);
+        setCompiled(true);
+        setTokens(mappedTokens);
+        setLogs((prev) => [...prev, ...(data.logs ?? ["OK"])]);
+        setErrors(data.errors ?? []);
+      }, Math.max(0, MIN_TIME - elapsed));
     } catch {
       setErrors(["Erro de rede: não consegui chamar o backend."]);
     }
   }, [code, language]);
+
+  useEffect(() => {
+    if(compiled){
+      setTimeout(() => {
+        setCompiled(false);
+      }, 2000)
+    }
+  }, [compiled])
 
   return (
     <div className="flex h-screen bg-bgSoft text-ink overflow-hidden">
@@ -78,8 +131,16 @@ export default function CodeEditorPage() {
       <div className="flex-1 min-w-0">
         {view === "code" && (
           <div className="flex flex-col h-full">
-            <EditorPane code={code} setCode={setCode} language={language} setLanguage={setLanguage} onCompile={handleCompile} />
-            <BottomTabs logs={logs} errors={errors} />
+            <EditorPane
+              code={code}
+              setCode={setCode}
+              language={language}
+              setLanguage={setLanguage}
+              charging={charging}
+              compiled={compiled}
+              onCompile={handleCompile} />
+            <BottomTabs logs={logs} errors={errors}
+            />
           </div>
         )}
 
