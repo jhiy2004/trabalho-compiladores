@@ -6,6 +6,7 @@ enable_testing()
 
 add_executable(compilador_test
     ${CMAKE_CURRENT_SOURCE_DIR}/compilador_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/sintatico_procedure.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/lexer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/lalg.cpp
 )
