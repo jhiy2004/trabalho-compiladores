@@ -5,6 +5,6 @@
     "node-gyp": "^12.2.0"
   },
   "scripts": {
-    "install": "node-gyp rebuild"
+    "install": "node-gyp rebuild && node-gyp configure -- -f gyp.generator.compile_commands_json.py && cp ./build/Release/compile_commands.json ./build"
   }
 }
