@@ -15,124 +15,77 @@ struct SyntacticError {
     unsigned int col;
 };
 
+struct Snapshot {
+    std::optional<Token> curr_token;
+    std::stack<StackElem> curr_symbols;
+    std::queue<SyntacticError> curr_errors;
+    std::string action;
+};
+
+enum class NonTerminal {
+    Program,
+    Block,
+    VariableDeclarationPart,
+    VariableDeclaration,
+    IdentifierList,
+    SubroutinesDeclarationPart,
+    ProcedureDeclaration,
+    FormalParameters,
+    FormalParametersSection,
+    Type,
+    Identifier,
+    CompoundCommand,
+    Command,
+    Assign,
+    ProcedureCall,
+    ConditionalCommand,
+    Expression,
+    RepetitiveCommand,
+    Relation,
+    SimpleExpression,
+    Term,
+    Factor,
+    Variable,
+    ExpressionList,
+};
+
 class SyntacticAnalyzerProcedures {
 public:
     SyntacticAnalyzerProcedures(std::string_view text) : _lexical(text) {}
 
-    void run() {
-        // Get the first token
-        advance();
-        program();
-    }
+    void run();
+
+    std::queue<SyntacticError> get_errors() const;
+    std::stack<StackElem> get_symbols() const;
+    std::vector<Snapshot> get_snapshots() const;
 private:
-    void program() {
-        symbols.push(StackElem{
-            .terminal = true,
-            .name = "."
-        });
+    void enqueue_error(unsigned int line, unsigned int col, std::string_view message);
+    void stack_non_terminal(NonTerminal nt);
+    void stack_terminal(TokenType token);
+    void stack_symbol(bool terminal, const std::string& name);
 
-        symbols.push(StackElem{
-            .terminal = false,
-            .name = "bloco"
-        });
+    void record_snapshot(const std::string action);
 
-        symbols.push(StackElem{
-            .terminal = true,
-            .name = ";"
-        });
+    void advance();
+    bool peek(TokenType type);
+    bool match(TokenType type);
+    bool expect(TokenType expected_type, std::string_view error_message);
 
-        symbols.push(StackElem{
-            .terminal = true,
-            .name = "id"
-        });
+    bool is_type();
 
-        symbols.push(StackElem{
-            .terminal = true,
-            .name = "program"
-        });
-
-        std::optional<Token> lookahead = _lexical.get_token();
-        if (!match(TokenType::ProgramWord)) {
-            enqueue_error(lookahead->line, lookahead->col, "program word not found");
-        }
-
-        if (!match(TokenType::Id)) {
-            enqueue_error(lookahead->line, lookahead->col, "program without id");
-        }
-
-        if (match(TokenType::SemiColonOp)) {
-            enqueue_error(lookahead->line, lookahead->col, "program without semicolon");
-        }
-
-        block();
-
-        if (match(TokenType::DotOp)) {
-            enqueue_error(lookahead->line, lookahead->col, "program without dot");
-        }
-    }
-
-    void enqueue_error(unsigned int line, unsigned int col, std::string_view message) {
-        errors.push(SyntacticError{
-            .error = std::string(message),
-            .line = line,
-            .col = col
-        });
-    }
-
-    bool match(TokenType type) {
-        if (lookahead.has_value()) {
-            return false;
-        }
-
-        if (lookahead.value().type != type) {
-            return false;
-        }
-
-        advance();
-        return true;
-    }
-
-    void block() {
-        std::optional<Token> curr_token = _lexical.get_token();
-
-    }
-
-    void variable_declaration_part() {
-        _lexical.get_token();
-    }
-
-    void variable_declaration() {
-        if(!match(TokenType::IntWord) && !match(TokenType::BooleanWord)) {
-            return;
-        }
-
-        identifier_list();
-    }
-
-    void identifier_list() {
-        if(!match(TokenType::Id)) {
-            enqueue_error(lookahead->line, lookahead->col, "identifier list without id");
-        }
-
-        while (true) {
-            if (!match(TokenType::CommaOp)) {
-                break;
-            }
-
-            if (!match(TokenType::Id)) {
-                enqueue_error(lookahead->line, lookahead->col,  "identifier list without id");
-                break;
-            }
-        }
-
-    }
-
-    void advance() {
-        lookahead = _lexical.get_token();
-    }
+    void program();
+    void block();
+    void type();
+    void variable_declaration_part();
+    void variable_declaration();
+    void identifier_list();
 
     LexicalAnalysisLALG _lexical;
     std::optional<Token> lookahead;
     std::stack<StackElem> symbols;
     std::queue<SyntacticError> errors;
+    std::vector<Snapshot> snapshots;
+
+    static const std::unordered_map<NonTerminal, std::string> non_terminals;
+    static const std::unordered_map<TokenType, std::string> terminals;
 };

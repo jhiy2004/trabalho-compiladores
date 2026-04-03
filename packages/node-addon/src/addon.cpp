@@ -1,6 +1,26 @@
 #include <napi.h>
 #include "compilador.h"
 #include "compilador_lalg.h"
+#include "analisador_sintatico_procedimento.h"
+
+static Napi::Object stack_elem_to_js(Napi::Env env, const StackElem& s) {
+    Napi::Object obj = Napi::Object::New(env);
+
+    obj.Set("terminal", Napi::Boolean::New(env, s.terminal));
+    obj.Set("name", Napi::String::New(env, s.name));
+
+    return obj;
+}
+
+static Napi::Object syntactic_error_to_js(Napi::Env env, const SyntacticError& e) {
+    Napi::Object obj = Napi::Object::New(env);
+
+    obj.Set("error", Napi::String::New(env, e.error));
+    obj.Set("line", Napi::Number::New(env, e.line));
+    obj.Set("col", Napi::Number::New(env, e.col));
+
+    return obj;
+}
 
 static Napi::Object token_to_js(Napi::Env env, const Token& t) {
     Napi::Object obj = Napi::Object::New(env);
@@ -20,6 +40,41 @@ static Napi::Object token_to_js(Napi::Env env, const TokenCalc& t) {
     obj.Set("lexeme", t.lexeme);
     obj.Set("line", t.line);
     obj.Set("col", t.col);
+
+    return obj;
+}
+
+static Napi::Object snapshot_to_js(Napi::Env env, const Snapshot& s) {
+    Napi::Object obj = Napi::Object::New(env);
+
+    if (s.curr_token.has_value()) {
+        obj.Set("curr_token", token_to_js(env, s.curr_token.value()));
+    } else {
+        obj.Set("curr_token", env.Null());
+    }
+    
+    Napi::Array symbols_arr = Napi::Array::New(env, s.curr_symbols.size());
+    std::stack<StackElem> temp_stack = s.curr_symbols; 
+    
+    uint32_t stack_idx = temp_stack.size();
+    while (!temp_stack.empty()) {
+        stack_idx--;
+        symbols_arr.Set(stack_idx, stack_elem_to_js(env, temp_stack.top()));
+        temp_stack.pop();
+    }
+    obj.Set("curr_symbols", symbols_arr);
+
+    Napi::Array errors_arr = Napi::Array::New(env, s.curr_errors.size());
+    std::queue<SyntacticError> temp_queue = s.curr_errors;
+    
+    uint32_t queue_idx = 0;
+    while (!temp_queue.empty()) {
+        errors_arr.Set(queue_idx++, syntactic_error_to_js(env, temp_queue.front()));
+        temp_queue.pop();
+    }
+    obj.Set("curr_errors", errors_arr);
+
+    obj.Set("action", Napi::String::New(env, s.action));
 
     return obj;
 }
@@ -255,6 +310,112 @@ Napi::Object createTokenTypeObject(Napi::Env env) {
 }
 
 //////////////////////////////////////////////////////////////
+// Syntactic Analyzer
+//////////////////////////////////////////////////////////////
+class SyntacticAnalyzerProceduresWrapper : public Napi::ObjectWrap<SyntacticAnalyzerProceduresWrapper> {
+public:
+    static Napi::Object Init(Napi::Env env, Napi::Object exports);
+
+    SyntacticAnalyzerProceduresWrapper(const Napi::CallbackInfo& info);
+
+    Napi::Value Run(const Napi::CallbackInfo& info);
+    Napi::Value GetErrors(const Napi::CallbackInfo& info);
+    Napi::Value GetSymbols(const Napi::CallbackInfo& info);
+    Napi::Value GetSnapshots(const Napi::CallbackInfo& info);
+
+private:
+    std::unique_ptr<SyntacticAnalyzerProcedures> analyzer;
+};
+
+Napi::Object SyntacticAnalyzerProceduresWrapper::Init(Napi::Env env, Napi::Object exports) {
+    Napi::Function func = DefineClass(env, "SyntacticAnalyzerProcedures", {
+        InstanceMethod("run", &SyntacticAnalyzerProceduresWrapper::Run),
+        InstanceMethod("get_errors", &SyntacticAnalyzerProceduresWrapper::GetErrors),
+        InstanceMethod("get_symbols", &SyntacticAnalyzerProceduresWrapper::GetSymbols),
+        InstanceMethod("get_snapshots", &SyntacticAnalyzerProceduresWrapper::GetSnapshots)
+    });
+
+    exports.Set("SyntacticAnalyzerProcedures", func);
+    return exports;
+}
+
+SyntacticAnalyzerProceduresWrapper::SyntacticAnalyzerProceduresWrapper(const Napi::CallbackInfo& info)
+    : Napi::ObjectWrap<SyntacticAnalyzerProceduresWrapper>(info)
+{
+    Napi::Env env = info.Env();
+
+    if (info.Length() < 1 || !info[0].IsString()) {
+        Napi::TypeError::New(env, "Expected string")
+            .ThrowAsJavaScriptException();
+        return;
+    }
+
+    std::string input = info[0].As<Napi::String>();
+    analyzer = std::make_unique<SyntacticAnalyzerProcedures>(input);
+}
+
+Napi::Value SyntacticAnalyzerProceduresWrapper::Run(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    analyzer->run();
+
+    return env.Undefined();
+}
+
+Napi::Value SyntacticAnalyzerProceduresWrapper::GetErrors(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    auto errors_queue = analyzer->get_errors(); 
+    
+    Napi::Array arr = Napi::Array::New(env, errors_queue.size());
+
+    uint32_t i = 0;
+    while (!errors_queue.empty()) {
+        arr.Set(i, syntactic_error_to_js(env, errors_queue.front()));
+        
+        errors_queue.pop();
+        
+        i++;
+    }
+
+    return arr;
+}
+
+Napi::Value SyntacticAnalyzerProceduresWrapper::GetSymbols(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    auto symbols_stack = analyzer->get_symbols(); 
+    
+    uint32_t size = symbols_stack.size();
+    Napi::Array arr = Napi::Array::New(env, size);
+
+    uint32_t i = size; 
+    
+    while (!symbols_stack.empty()) {
+        i--;
+        
+        arr.Set(i, stack_elem_to_js(env, symbols_stack.top()));
+        
+        symbols_stack.pop();
+    }
+
+    return arr;
+}
+
+Napi::Value SyntacticAnalyzerProceduresWrapper::GetSnapshots(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    auto snapshots = analyzer->get_snapshots();
+    Napi::Array arr = Napi::Array::New(env, snapshots.size());
+
+    for (size_t i = 0; i < snapshots.size(); i++) {
+        arr.Set(i, snapshot_to_js(env, snapshots[i]));
+    }
+
+    return arr;
+}
+
+//////////////////////////////////////////////////////////////
 // MODULE INIT
 //////////////////////////////////////////////////////////////
 
@@ -264,6 +425,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
 
     LexicalAnalysisCalcWrapper::Init(env, exports);
     LexicalAnalysisLALGWrapper::Init(env, exports);
+    SyntacticAnalyzerProceduresWrapper::Init(env, exports);
 
     exports.Set("TokenTypeCalc", createTokenTypeCalcObject(env));
     exports.Set("TokenType", createTokenTypeObject(env));
