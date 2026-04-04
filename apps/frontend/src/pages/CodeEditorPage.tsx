@@ -7,13 +7,20 @@ import SymbolsTable from "../components/SymbolsTable";
 import SyntaxView from "../components/SyntaxView";
 import SemanticView from "../components/SemanticView";
 import type { ViewKey } from "../ui/views";
-import type { LexResponse, TokenRow, SymbolRow } from "../types";
+import type {
+  LexResponse,
+  TokenRow,
+  SymbolRow,
+  ParseResponse,
+  ParseErrorRow,
+  SnapshotRow,
+  ParseStackSymbolRow,
+} from "../types";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 export default function CodeEditorPage() {
   const [view, setView] = useState<ViewKey>("code");
-
   const [language, setLanguage] = useState("lalg");
 
   const [code, setCode] = useState<string>(
@@ -60,7 +67,10 @@ end.`
   const [compiled, setCompiled] = useState(false);
 
   const [tokens, setTokens] = useState<TokenRow[]>([]);
-  const [symbols, ] = useState<SymbolRow[]>([]);
+  const [symbols, setSymbols] = useState<SymbolRow[]>([]);
+  const [syntaxErrors, setSyntaxErrors] = useState<ParseErrorRow[]>([]);
+  const [syntaxSnapshots, setSyntaxSnapshots] = useState<SnapshotRow[]>([]);
+  const [syntaxSymbolsRaw, setSyntaxSymbolsRaw] = useState<ParseStackSymbolRow[]>([]);
   const [logs, setLogs] = useState<string[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
   const [semanticErrors, setSemanticErrors] = useState<string[]>([]);
@@ -75,6 +85,9 @@ end.`
   const handleCompile = useCallback(async () => {
     setErrors([]);
     setSemanticErrors([]);
+    setSyntaxErrors([]);
+    setSyntaxSnapshots([]);
+    setSyntaxSymbolsRaw([]);
     setLogs((prev) => [...prev, "Compilando..."]);
     setCharging(true);
     const start = Date.now();
@@ -89,16 +102,49 @@ end.`
       const data = (await res.json()) as LexResponse;
 
       if (!res.ok) {
+        setCharging(false);
         setErrors([data?.errors?.[0] ?? "Falha ao compilar."]);
         return;
       }
 
-      const mappedTokens: TokenRow[] = (data.tokens ?? []).map((t: any) => ({
+      const mappedTokens: TokenRow[] = (data.tokens ?? []).map((t) => ({
         lexema: t.lexeme,
         token: t.type,
         posicao: `${t.line}:${t.col}`,
-        // simbolo: t.lexeme,
       }));
+
+      let mappedSymbols: SymbolRow[] = [];
+      let parsedErrors: ParseErrorRow[] = [];
+      let parsedSnapshots: SnapshotRow[] = [];
+      let parsedSymbolsRaw: ParseStackSymbolRow[] = [];
+
+      if (language === "lalg") {
+        const parseRes = await fetch(`${API_BASE}/api/parse/lalg`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ source: code }),
+        });
+
+        const parseData = (await parseRes.json()) as ParseResponse;
+
+        if (!parseRes.ok) {
+          setCharging(false);
+          setErrors(
+            (parseData.errors ?? []).map((e) => `${e.error} (${e.line}:${e.col})`)
+          );
+          return;
+        }
+
+        parsedErrors = parseData.errors ?? [];
+        parsedSnapshots = parseData.snapshots ?? [];
+        parsedSymbolsRaw = parseData.symbols ?? [];
+
+        mappedSymbols = parsedSymbolsRaw.map((s) => ({
+          simbolo: s.name,
+          tipo: s.terminal ? "Terminal" : "Não terminal",
+          categoria: "Sintático",
+        }));
+      }
 
       const elapsed = Date.now() - start;
       const MIN_TIME = 800;
@@ -107,27 +153,33 @@ end.`
         setCharging(false);
         setCompiled(true);
         setTokens(mappedTokens);
+        setSymbols(mappedSymbols);
+        setSyntaxErrors(parsedErrors);
+        setSyntaxSnapshots(parsedSnapshots);
+        setSyntaxSymbolsRaw(parsedSymbolsRaw);
         setLogs((prev) => [...prev, ...(data.logs ?? ["OK"])]);
         setErrors(data.errors ?? []);
       }, Math.max(0, MIN_TIME - elapsed));
     } catch {
+      setCharging(false);
       setErrors(["Erro de rede: não consegui chamar o backend."]);
     }
   }, [code, language]);
 
   useEffect(() => {
-    if(compiled){
-      setTimeout(() => {
+    if (compiled) {
+      const timer = setTimeout(() => {
         setCompiled(false);
-      }, 2000)
+      }, 2000);
+
+      return () => clearTimeout(timer);
     }
-  }, [compiled])
+  }, [compiled]);
 
   return (
     <div className="flex h-screen bg-bgSoft text-ink overflow-hidden">
       <LeftRail current={view} onPick={pick} />
 
-      {/* Area principal, vai mudar conforme a view selecionada */}
       <div className="flex-1 min-w-0">
         {view === "code" && (
           <div className="flex flex-col h-full">
@@ -138,9 +190,9 @@ end.`
               setLanguage={setLanguage}
               charging={charging}
               compiled={compiled}
-              onCompile={handleCompile} />
-            <BottomTabs logs={logs} errors={errors}
+              onCompile={handleCompile}
             />
+            <BottomTabs logs={logs} errors={errors} />
           </div>
         )}
 
@@ -153,7 +205,13 @@ end.`
         )}
 
         {view === "syntax" && (
-          <SyntaxView tokens={tokens} symbols={symbols} />
+          <SyntaxView
+            tokens={tokens}
+            symbols={symbols}
+            syntaxErrors={syntaxErrors}
+            syntaxSnapshots={syntaxSnapshots}
+            syntaxSymbolsRaw={syntaxSymbolsRaw}
+          />
         )}
 
         {view === "semantic" && (
