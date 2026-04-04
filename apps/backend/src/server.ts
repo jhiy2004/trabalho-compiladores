@@ -3,6 +3,7 @@ import cors from "cors";
 import morgan from "morgan";
 
 import { lexerRouter } from "./routes/lexer";
+import { syntacticRouter } from "./routes/syntactic";
 
 const app = express();
 
@@ -13,6 +14,8 @@ app.use(morgan("dev"));
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 app.use("/api", lexerRouter);
+
+app.use("/api", syntacticRouter);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 app.listen(PORT, () => console.log(`Backend on http://localhost:${PORT}`));

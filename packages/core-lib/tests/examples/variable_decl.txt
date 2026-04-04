@@ -1,0 +1,4 @@
+program correto;
+int a, b, c;
+boolean d, e, f;
+.

@@ -7,6 +7,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_library(compilador STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/analisador_sintatico.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/analisador_sintatico_procedimento.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/compilador.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/compilador_lalg.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/util.cpp
