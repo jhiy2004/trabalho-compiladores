@@ -8,7 +8,7 @@ import type {
 
 export default function SyntaxView({
   tokens,
-  symbols,
+  symbols: _symbols,
   syntaxErrors,
   syntaxSnapshots,
   syntaxSymbolsRaw,
