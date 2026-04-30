@@ -59,7 +59,7 @@ public:
     std::stack<StackElem> get_symbols() const;
     std::vector<Snapshot> get_snapshots() const;
 private:
-    void enqueue_error(unsigned int line, unsigned int col, std::string_view message);
+    void enqueue_error(std::string_view message);
     void stack_non_terminal(NonTerminal nt);
     void stack_terminal(TokenType token);
     void stack_symbol(bool terminal, const std::string& name);
@@ -72,6 +72,7 @@ private:
     bool expect(TokenType expected_type, std::string_view error_message);
 
     bool is_type();
+    bool is_relation();
 
     void program();
     void block();
@@ -79,6 +80,22 @@ private:
     void variable_declaration_part();
     void variable_declaration();
     void identifier_list();
+    void compound_command();
+
+    void command();
+    void assign();
+    void variable();
+    void procedure_call();
+    void conditional_command_1();
+    void repetitive_command_1();
+
+    void expression_list();
+
+    void expression();
+    void simple_expression();
+    void term();
+    void relation();
+    void factor();
 
     LexicalAnalysisLALG _lexical;
     std::optional<Token> lookahead;
