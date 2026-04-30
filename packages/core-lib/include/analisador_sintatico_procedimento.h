@@ -63,6 +63,7 @@ private:
     void stack_non_terminal(NonTerminal nt);
     void stack_terminal(TokenType token);
     void stack_symbol(bool terminal, const std::string& name);
+    void pop_symbol();
 
     void record_snapshot(const std::string action);
 

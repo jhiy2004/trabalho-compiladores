@@ -47,6 +47,13 @@ void SyntacticAnalyzerProcedures::stack_non_terminal(NonTerminal nt) {
     stack_symbol(false, it->second);
 }
 
+void SyntacticAnalyzerProcedures::pop_symbol() {
+    if (symbols.empty()) {
+        enqueue_error("Internal error: stack underflow");
+        return;
+    }
+}
+
 void SyntacticAnalyzerProcedures::program() {
     stack_terminal(TokenType::DotOp);
     stack_non_terminal(NonTerminal::Block);
@@ -57,23 +64,23 @@ void SyntacticAnalyzerProcedures::program() {
     record_snapshot("Stacked program non-terminal");
 
     expect(TokenType::ProgramWord,  "program word not found");
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped program");
 
     expect(TokenType::Id, "program without id");
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped id");
 
     expect(TokenType::SemiColonOp, "program without semicolon");
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped ;");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped <block>");
     block();
 
     expect(TokenType::DotOp, "program without dot");
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped .");
 
 }
@@ -138,14 +145,14 @@ void SyntacticAnalyzerProcedures::block() {
     stack_non_terminal(NonTerminal::VariableDeclarationPart);
     record_snapshot("Stacked block");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped <variable_declaration_part>");
     variable_declaration_part();
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped <subroutines_declaration_part>");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped <compound_command>");
     compound_command();
 }
@@ -168,7 +175,7 @@ void SyntacticAnalyzerProcedures::variable_declaration_part() {
     stack_non_terminal(NonTerminal::VariableDeclaration);
     record_snapshot("Stacked variable_declaration_part");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped <variable_declaration>");
     variable_declaration();
 
@@ -176,14 +183,14 @@ void SyntacticAnalyzerProcedures::variable_declaration_part() {
         return;
     }
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped ;");
 
     while (is_type()) {
         stack_terminal(TokenType::SemiColonOp);
         stack_non_terminal(NonTerminal::VariableDeclaration);
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped <variable_declaration>");
         variable_declaration();
 
@@ -191,7 +198,7 @@ void SyntacticAnalyzerProcedures::variable_declaration_part() {
             return;
         }
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped ;");
     }
 }
@@ -205,11 +212,11 @@ void SyntacticAnalyzerProcedures::variable_declaration() {
     stack_non_terminal(NonTerminal::Type);
     record_snapshot("Stacked variable_declaration");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped <type>");
     type();
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped <identifier_list>");
     identifier_list();
 }
@@ -220,7 +227,7 @@ void SyntacticAnalyzerProcedures::identifier_list() {
 
     expect(TokenType::Id, "identifier list without id");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped identifier");
 
     while (true) {
@@ -231,14 +238,14 @@ void SyntacticAnalyzerProcedures::identifier_list() {
         stack_terminal(TokenType::CommaOp);
         record_snapshot("Stacked identifier list");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped ,");
 
         if (!expect(TokenType::Id,  "identifier list without id")) {
             break;
         }
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped identifier");
     }
 }
@@ -252,10 +259,10 @@ void SyntacticAnalyzerProcedures::compound_command() {
 
     expect(TokenType::BeginWord, "Compound command without begin");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped begin");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped command");
     command();
 
@@ -268,16 +275,16 @@ void SyntacticAnalyzerProcedures::compound_command() {
         stack_terminal(TokenType::SemiColonOp);
         record_snapshot("Stacked compound_command ext");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped semicolon");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped command");
         command();
     }
 
     expect(TokenType::EndWord, "Compound command without end");
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped end");
 }
 
@@ -289,7 +296,7 @@ void SyntacticAnalyzerProcedures::command() {
             stack_non_terminal(NonTerminal::ProcedureCall);
             record_snapshot("Stacked procedure_call");
 
-            symbols.pop();
+            pop_symbol();
             record_snapshot("Popped procedure_call");
 
             procedure_call();
@@ -298,7 +305,7 @@ void SyntacticAnalyzerProcedures::command() {
             stack_non_terminal(NonTerminal::Assign);
             record_snapshot("Stacked assign");
 
-            symbols.pop();
+            pop_symbol();
             record_snapshot("Popped assign");
 
             assign();
@@ -313,7 +320,7 @@ void SyntacticAnalyzerProcedures::command() {
         stack_non_terminal(NonTerminal::CompoundCommand);
         record_snapshot("Stacked compound_command");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped compound_command");
         compound_command();
         return;
@@ -323,7 +330,7 @@ void SyntacticAnalyzerProcedures::command() {
         stack_non_terminal(NonTerminal::ConditionalCommand);
         record_snapshot("Stacked conditional_command_1");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped conditional_command_1");
 
         conditional_command_1();
@@ -334,7 +341,7 @@ void SyntacticAnalyzerProcedures::command() {
         stack_non_terminal(NonTerminal::RepetitiveCommand);
         record_snapshot("Stacked repetitive_command_1");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped repetitive_command_1");
 
         repetitive_command_1();
@@ -348,17 +355,17 @@ void SyntacticAnalyzerProcedures::assign() {
     stack_non_terminal(NonTerminal::Variable);
     record_snapshot("Stacked assign");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped variable");
     variable();
 
     if (!expect(TokenType::AssignOp, "Malformed assing op, missing ':='")) {
         return;
     }
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped AssignOp");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped expression");
     expression();
 }
@@ -367,7 +374,7 @@ void SyntacticAnalyzerProcedures::variable() {
     stack_non_terminal(NonTerminal::Identifier);
     record_snapshot("Stacked variable identifier");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped identifier");
 
     if (peek(TokenType::AddOp) || peek(TokenType::SubOp) || peek(TokenType::Num) ||
@@ -375,7 +382,7 @@ void SyntacticAnalyzerProcedures::variable() {
         stack_non_terminal(NonTerminal::Expression);
         record_snapshot("Stacked variable expression");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped expression");
         expression();
     }
@@ -392,15 +399,15 @@ void SyntacticAnalyzerProcedures::procedure_call() {
 
     record_snapshot("Stacked procedure_call");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped (");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped expression_list");
     expression_list();
 
     expect(TokenType::CloseParOp, "Malformed procedure call, missing ')'");
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped )");
 }
 
@@ -415,20 +422,20 @@ void SyntacticAnalyzerProcedures::conditional_command_1() {
         return;
     }
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped if");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped expression");
     expression();
 
     if (expect(TokenType::ThenWord, "Malformed if command, missing then")) {
         return;
     }
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped then");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped command");
     command();
 
@@ -436,7 +443,7 @@ void SyntacticAnalyzerProcedures::conditional_command_1() {
         stack_terminal(TokenType::ElseWord);
         record_snapshot("Stacked else");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped command");
         command();
     }
@@ -453,7 +460,7 @@ void SyntacticAnalyzerProcedures::expression_list() {
     stack_non_terminal(NonTerminal::Expression);
     record_snapshot("Stacked expression list");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped expression list");
     expression();
 
@@ -463,10 +470,10 @@ void SyntacticAnalyzerProcedures::expression_list() {
             stack_terminal(TokenType::CommaOp);
             record_snapshot("Stacked expression list");
 
-            symbols.pop();
+            pop_symbol();
             record_snapshot("Popped ,");
 
-            symbols.pop();
+            pop_symbol();
             record_snapshot("Popped expression");
             expression();
         }
@@ -477,7 +484,7 @@ void SyntacticAnalyzerProcedures::expression() {
     stack_non_terminal(NonTerminal::SimpleExpression);
     record_snapshot("Stacked expression");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped simple_expression");
     simple_expression();
 
@@ -486,11 +493,11 @@ void SyntacticAnalyzerProcedures::expression() {
         stack_non_terminal(NonTerminal::Relation);
         record_snapshot("Stacked expression");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped relation");
         relation();
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped simple_expression");
         simple_expression();
     }
@@ -502,7 +509,7 @@ void SyntacticAnalyzerProcedures::simple_expression() {
         stack_terminal(TokenType::AddOp);
         record_snapshot("Stacked AddOp");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped AddOp");
 
         return;
@@ -510,13 +517,13 @@ void SyntacticAnalyzerProcedures::simple_expression() {
         stack_terminal(TokenType::SubOp);
         record_snapshot("Stacked SubOp");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped SubOp");
     } else {
         return;
     }
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped term");
     term();
 
@@ -528,23 +535,23 @@ void SyntacticAnalyzerProcedures::simple_expression() {
                 stack_terminal(TokenType::AddOp);
                 record_snapshot("Stacked simple_expression");
 
-                symbols.pop();
+                pop_symbol();
                 record_snapshot("Popped AddOp");
             } else if(prev_type == TokenType::SubOp) {
                 stack_terminal(TokenType::SubOp);
                 record_snapshot("Stacked simple_expression");
 
-                symbols.pop();
+                pop_symbol();
                 record_snapshot("Popped SubOp");
             } else if(prev_type == TokenType::DivWord) {
                 stack_terminal(TokenType::DivWord);
                 record_snapshot("Stacked simple_expression");
 
-                symbols.pop();
+                pop_symbol();
                 record_snapshot("Popped DivWord");
             }
 
-            symbols.pop();
+            pop_symbol();
             record_snapshot("Popped term");
             term();
         } else {
@@ -557,7 +564,7 @@ void SyntacticAnalyzerProcedures::term() {
     stack_non_terminal(NonTerminal::Factor);
     record_snapshot("Stacked term");
 
-    symbols.pop();
+    pop_symbol();
     record_snapshot("Popped factor");
     factor();
 
@@ -569,23 +576,23 @@ void SyntacticAnalyzerProcedures::term() {
                 stack_terminal(TokenType::MulOp);
                 record_snapshot("Stacked MulOp");
 
-                symbols.pop();
+                pop_symbol();
                 record_snapshot("Popped MulOp");
             } else if(prev_type == TokenType::DivWord) {
                 stack_terminal(TokenType::DivWord);
                 record_snapshot("Stacked DivWord");
 
-                symbols.pop();
+                pop_symbol();
                 record_snapshot("Popped DivWord");
             } else if(prev_type == TokenType::AndWord) {
                 stack_terminal(TokenType::AndWord);
                 record_snapshot("Stacked AndWord");
 
-                symbols.pop();
+                pop_symbol();
                 record_snapshot("Popped AndWord");
             }
 
-            symbols.pop();
+            pop_symbol();
             record_snapshot("Popped Factor");
             factor();
         } else {
@@ -623,16 +630,16 @@ void SyntacticAnalyzerProcedures::factor() {
         stack_terminal(TokenType::OpenParOp);
         record_snapshot("Stacked factor");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped OpenPar");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped expression");
         expression();
 
         expect(TokenType::CloseParOp, "Malformed factor, missing ')'");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped CloseParOp");
         return;
     } else if(match(TokenType::NotWord)) {
@@ -640,10 +647,10 @@ void SyntacticAnalyzerProcedures::factor() {
         stack_terminal(TokenType::NotWord);
         record_snapshot("Stacked factor");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped NotWord");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped factor");
         factor(); 
         return;
@@ -651,7 +658,7 @@ void SyntacticAnalyzerProcedures::factor() {
         stack_non_terminal(NonTerminal::Variable);
         record_snapshot("Stacked factor");
 
-        symbols.pop();
+        pop_symbol();
         record_snapshot("Popped variable");
         factor();
         return;
