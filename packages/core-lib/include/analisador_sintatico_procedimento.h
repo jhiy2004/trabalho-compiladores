@@ -81,6 +81,12 @@ private:
     void variable_declaration_part();
     void variable_declaration();
     void identifier_list();
+
+    void subroutines_declaration_part();
+    void procedure_declaration();
+    void formal_parameters();
+    void formal_parameters_section();
+
     void compound_command();
 
     void command();
