@@ -1,5 +1,6 @@
 #include "analisador_sintatico_procedimento.h"
 #include "compilador_lalg.h"
+#include <iostream>
 
 void SyntacticAnalyzerProcedures::run() {
     // Get the first token
@@ -52,6 +53,7 @@ void SyntacticAnalyzerProcedures::pop_symbol() {
         enqueue_error("Internal error: stack underflow");
         return;
     }
+    symbols.pop();
 }
 
 void SyntacticAnalyzerProcedures::program() {
@@ -317,13 +319,13 @@ void SyntacticAnalyzerProcedures::formal_parameters_section() {
 
     if (!expect(TokenType::ColonOp, "Expected ':' in formal parameters section")) return;
 
-    stack_non_terminal(NonTerminal::Identifier);
+    stack_non_terminal(NonTerminal::Type);
     record_snapshot("Stacked type identifier in parameters");
 
     pop_symbol();
-    record_snapshot("Popped <identifier>");
+    record_snapshot("Popped <type>");
     
-    expect(TokenType::Id, "Expected type identifier after ':'"); 
+    type();
 }
 
 void SyntacticAnalyzerProcedures::identifier_list() {
@@ -394,9 +396,7 @@ void SyntacticAnalyzerProcedures::compound_command() {
 }
 
 void SyntacticAnalyzerProcedures::command() {
-    if (peek(TokenType::Id)) {
-        match(TokenType::Id);
-
+    if (match(TokenType::Id) || match(TokenType::ReadWord) || match(TokenType::WriteWord)) {
         if (peek(TokenType::OpenParOp)) {
             stack_non_terminal(NonTerminal::ProcedureCall);
             record_snapshot("Stacked procedure_call");
@@ -523,7 +523,7 @@ void SyntacticAnalyzerProcedures::conditional_command_1() {
     stack_terminal(TokenType::IfWord);
     record_snapshot("Stacked conditional_command_1");
 
-    if (expect(TokenType::IfWord, "Malformed if command, missing if")) {
+    if (!expect(TokenType::IfWord, "Malformed if command, missing if")) {
         return;
     }
 
@@ -534,7 +534,7 @@ void SyntacticAnalyzerProcedures::conditional_command_1() {
     record_snapshot("Popped expression");
     expression();
 
-    if (expect(TokenType::ThenWord, "Malformed if command, missing then")) {
+    if (!expect(TokenType::ThenWord, "Malformed if command, missing then")) {
         return;
     }
     pop_symbol();
@@ -555,9 +555,9 @@ void SyntacticAnalyzerProcedures::conditional_command_1() {
 }
 
 void SyntacticAnalyzerProcedures::repetitive_command_1() {
-    if (expect(TokenType::WhileWord, "Malformed repetitive_command_1, missing while")) return;
+    if (!expect(TokenType::WhileWord, "Malformed repetitive_command_1, missing while")) return;
     expression();
-    if (expect(TokenType::DoWord, "Malformed repetitive_command_1, missing do")) return;
+    if (!expect(TokenType::DoWord, "Malformed repetitive_command_1, missing do")) return;
     command();
 }
 
@@ -570,18 +570,20 @@ void SyntacticAnalyzerProcedures::expression_list() {
     expression();
 
     while(true) {
-        if (match(TokenType::CommaOp)) {
-            stack_non_terminal(NonTerminal::Expression);
-            stack_terminal(TokenType::CommaOp);
-            record_snapshot("Stacked expression list");
-
-            pop_symbol();
-            record_snapshot("Popped ,");
-
-            pop_symbol();
-            record_snapshot("Popped expression");
-            expression();
+        if (!match(TokenType::CommaOp)) {
+            break;
         }
+
+        stack_non_terminal(NonTerminal::Expression);
+        stack_terminal(TokenType::CommaOp);
+        record_snapshot("Stacked expression list");
+
+        pop_symbol();
+        record_snapshot("Popped ,");
+
+        pop_symbol();
+        record_snapshot("Popped expression");
+        expression();
     }
 }
 
@@ -616,16 +618,12 @@ void SyntacticAnalyzerProcedures::simple_expression() {
 
         pop_symbol();
         record_snapshot("Popped AddOp");
-
-        return;
     } else if(match(TokenType::SubOp)) {
         stack_terminal(TokenType::SubOp);
         record_snapshot("Stacked SubOp");
 
         pop_symbol();
         record_snapshot("Popped SubOp");
-    } else {
-        return;
     }
 
     pop_symbol();
@@ -728,6 +726,9 @@ void SyntacticAnalyzerProcedures::factor() {
     if (match(TokenType::Num)) {
         stack_terminal(TokenType::Num);
         record_snapshot("Stacked factor");
+
+        pop_symbol();
+        record_snapshot("Popped number");
         return;
     } else if (match(TokenType::OpenParOp)){
         stack_terminal(TokenType::CloseParOp);
@@ -759,13 +760,12 @@ void SyntacticAnalyzerProcedures::factor() {
         record_snapshot("Popped factor");
         factor(); 
         return;
-    } else if(match(TokenType::Id)) {
+    } else if(match(TokenType::Id) || match(TokenType::FalseWord) || match(TokenType::TrueWord)) {
         stack_non_terminal(NonTerminal::Variable);
         record_snapshot("Stacked factor");
 
         pop_symbol();
         record_snapshot("Popped variable");
-        factor();
         return;
     }
 
@@ -774,6 +774,15 @@ void SyntacticAnalyzerProcedures::factor() {
 
 void SyntacticAnalyzerProcedures::advance() {
     lookahead = _lexical.get_token();
+}
+
+void SyntacticAnalyzerProcedures::print_current_lexeme() {
+    if (!lookahead.has_value()) {
+        std::cout << "All tokens consumed!" << std::endl;
+        return;
+    }
+    std::cout << "lookahead: " << lookahead->lexeme << std::endl;
+    std::cout << "type: " << terminals.find(lookahead->type)->second << std::endl;
 }
 
 const std::unordered_map<NonTerminal, std::string> SyntacticAnalyzerProcedures::non_terminals = {
@@ -789,6 +798,18 @@ const std::unordered_map<NonTerminal, std::string> SyntacticAnalyzerProcedures::
     { NonTerminal::ProcedureDeclaration, "<procedure_declaration>" },
     { NonTerminal::FormalParameters, "<formal_parameters>" },
     { NonTerminal::FormalParametersSection, "<formal_parameters_section>" },
+    { NonTerminal::Command, "<command>" },
+    { NonTerminal::ProcedureCall, "<procedure_call>" },
+    { NonTerminal::ConditionalCommand, "<conditional_command>" },
+    { NonTerminal::RepetitiveCommand, "<repetitive_command>" },
+    { NonTerminal::Expression, "<expression>" },
+    { NonTerminal::Variable, "<variable>" },
+    { NonTerminal::ExpressionList, "<expression_list>" },
+    { NonTerminal::SimpleExpression, "<simple_expression>" },
+    { NonTerminal::Relation, "<relation>" },
+    { NonTerminal::Term, "<term>" },
+    { NonTerminal::Factor, "<factor>" },
+    { NonTerminal::Assign, "<assign>"},
 };
 
 const std::unordered_map<TokenType, std::string> SyntacticAnalyzerProcedures::terminals = {
@@ -801,4 +822,23 @@ const std::unordered_map<TokenType, std::string> SyntacticAnalyzerProcedures::te
     { TokenType::ColonOp, ":" },
     { TokenType::OpenParOp, "(" },
     { TokenType::CloseParOp, ")" },
+    { TokenType::BeginWord, "begin" },
+    { TokenType::EndWord, "end" },
+    { TokenType::AssignOp, ":=" },
+    { TokenType::ThenWord, "then" },
+    { TokenType::IfWord, "if" },
+    { TokenType::ElseWord, "else" },
+    { TokenType::AddOp, "+" },
+    { TokenType::SubOp, "-" },
+    { TokenType::DivWord, "div" },
+    { TokenType::MulOp, "*" },
+    { TokenType::AndWord, "and" },
+    { TokenType::NotWord, "not" },
+    { TokenType::Num, "<number>" }, // Isso e um nao terminal, porem o lexico gera token para isso
+    { TokenType::TrueWord, "true" },
+    { TokenType::FalseWord, "false" },
+    { TokenType::Id, "identifier" },
+    { TokenType::ReadWord, "read" },
+    { TokenType::WriteWord, "write" },
 };
+

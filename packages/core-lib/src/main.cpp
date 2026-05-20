@@ -5,7 +5,7 @@
 #include "analisador_sintatico_procedimento.h"
 
 int main() {
-    std::string teste = parse_file_to_string(std::filesystem::path(EXAMPLES_DIR) / "variable_decl.txt");
+    std::string teste = parse_file_to_string(std::filesystem::path(EXAMPLES_DIR) / "correto1.txt");
     /*
     std::string teste = "(1 + 1) / 3 * 9\n   \n\n\n\n   p";
 
@@ -61,6 +61,7 @@ int main() {
         }
         std::cout << "\n\n";
     }
+    analysis.print_current_lexeme();
 
     return 0;
 }

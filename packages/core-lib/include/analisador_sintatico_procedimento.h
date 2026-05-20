@@ -58,6 +58,7 @@ public:
     std::queue<SyntacticError> get_errors() const;
     std::stack<StackElem> get_symbols() const;
     std::vector<Snapshot> get_snapshots() const;
+    void print_current_lexeme();
 private:
     void enqueue_error(std::string_view message);
     void stack_non_terminal(NonTerminal nt);
