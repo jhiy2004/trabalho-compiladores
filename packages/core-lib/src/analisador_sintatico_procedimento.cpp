@@ -151,6 +151,7 @@ void SyntacticAnalyzerProcedures::block() {
 
     pop_symbol();
     record_snapshot("Popped <subroutines_declaration_part>");
+    subroutines_declaration_part();
 
     pop_symbol();
     record_snapshot("Popped <compound_command>");
@@ -219,6 +220,110 @@ void SyntacticAnalyzerProcedures::variable_declaration() {
     pop_symbol();
     record_snapshot("Popped <identifier_list>");
     identifier_list();
+}
+
+void SyntacticAnalyzerProcedures::subroutines_declaration_part() {
+    while (peek(TokenType::ProcedureWord)) {
+        stack_terminal(TokenType::SemiColonOp);
+        stack_non_terminal(NonTerminal::ProcedureDeclaration);
+        record_snapshot("Stacked subroutines_declaration_part iteration");
+
+        pop_symbol();
+        record_snapshot("Popped <procedure_declaration>");
+        procedure_declaration();
+
+        if (!expect(TokenType::SemiColonOp, "Subroutine declaration without ';'")) {
+            return;
+        }
+
+        pop_symbol();
+        record_snapshot("Popped ;");
+    }
+}
+
+void SyntacticAnalyzerProcedures::procedure_declaration() {
+    if (!expect(TokenType::ProcedureWord, "Expected 'procedure' keyword")) return;
+
+    stack_non_terminal(NonTerminal::Identifier);
+    record_snapshot("Stacked procedure identifier");
+
+    pop_symbol();
+    record_snapshot("Popped <identifier>");
+    
+    if (!expect(TokenType::Id, "Procedure without identifier")) return;
+
+    if (peek(TokenType::OpenParOp)) {
+        stack_non_terminal(NonTerminal::FormalParameters);
+        record_snapshot("Stacked <formal_parameters>");
+
+        pop_symbol();
+        record_snapshot("Popped <formal_parameters>");
+        formal_parameters();
+    }
+
+    stack_terminal(TokenType::SemiColonOp);
+    record_snapshot("Stacked semicolon for procedure signature");
+
+    pop_symbol();
+    record_snapshot("Popped ;");
+
+    if (!expect(TokenType::SemiColonOp, "Procedure signature without ';'")) return;
+
+    stack_non_terminal(NonTerminal::Block);
+    record_snapshot("Stacked procedure <block>");
+
+    pop_symbol();
+    record_snapshot("Popped <block>");
+    block();
+}
+
+void SyntacticAnalyzerProcedures::formal_parameters() {
+    if (!expect(TokenType::OpenParOp, "Expected '(' for formal parameters")) return;
+
+    stack_non_terminal(NonTerminal::FormalParametersSection);
+    record_snapshot("Stacked formal parameters section");
+
+    pop_symbol();
+    record_snapshot("Popped <formal_parameters_section>");
+    formal_parameters_section();
+
+    while (match(TokenType::SemiColonOp)) {
+        stack_non_terminal(NonTerminal::FormalParametersSection);
+        record_snapshot("Stacked formal parameters section loop");
+
+        pop_symbol();
+        record_snapshot("Popped <formal_parameters_section>");
+        formal_parameters_section();
+    }
+
+    expect(TokenType::CloseParOp, "Expected ')' ending formal parameters");
+}
+
+void SyntacticAnalyzerProcedures::formal_parameters_section() {
+    if (match(TokenType::VarWord)) {
+        stack_terminal(TokenType::VarWord);
+        record_snapshot("Stacked var keyword");
+        
+        pop_symbol();
+        record_snapshot("Popped var keyword");
+    }
+
+    stack_non_terminal(NonTerminal::IdentifierList);
+    record_snapshot("Stacked identifier list in parameters");
+
+    pop_symbol();
+    record_snapshot("Popped <identifier_list>");
+    identifier_list();
+
+    if (!expect(TokenType::ColonOp, "Expected ':' in formal parameters section")) return;
+
+    stack_non_terminal(NonTerminal::Identifier);
+    record_snapshot("Stacked type identifier in parameters");
+
+    pop_symbol();
+    record_snapshot("Popped <identifier>");
+    
+    expect(TokenType::Id, "Expected type identifier after ':'"); 
 }
 
 void SyntacticAnalyzerProcedures::identifier_list() {
@@ -681,6 +786,9 @@ const std::unordered_map<NonTerminal, std::string> SyntacticAnalyzerProcedures::
     { NonTerminal::IdentifierList, "<identifier_list>"},
     { NonTerminal::Identifier, "<identifier>"},
     { NonTerminal::Type, "<type>"},
+    { NonTerminal::ProcedureDeclaration, "<procedure_declaration>" },
+    { NonTerminal::FormalParameters, "<formal_parameters>" },
+    { NonTerminal::FormalParametersSection, "<formal_parameters_section>" },
 };
 
 const std::unordered_map<TokenType, std::string> SyntacticAnalyzerProcedures::terminals = {
@@ -688,4 +796,9 @@ const std::unordered_map<TokenType, std::string> SyntacticAnalyzerProcedures::te
     { TokenType::SemiColonOp, ";" },
     { TokenType::DotOp, "." },
     { TokenType::ProgramWord, "program" },
+    { TokenType::ProcedureWord, "procedure" },
+    { TokenType::VarWord, "var" },
+    { TokenType::ColonOp, ":" },
+    { TokenType::OpenParOp, "(" },
+    { TokenType::CloseParOp, ")" },
 };
