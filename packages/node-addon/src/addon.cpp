@@ -2,6 +2,8 @@
 #include "compilador.h"
 #include "compilador_lalg.h"
 #include "analisador_sintatico_procedimento.h"
+#include "tabela_simbolos.h"
+#include "analisador_semantico.h"
 
 static Napi::Object stack_elem_to_js(Napi::Env env, const StackElem& s) {
     Napi::Object obj = Napi::Object::New(env);
@@ -18,6 +20,42 @@ static Napi::Object syntactic_error_to_js(Napi::Env env, const SyntacticError& e
     obj.Set("error", Napi::String::New(env, e.error));
     obj.Set("line", Napi::Number::New(env, e.line));
     obj.Set("col", Napi::Number::New(env, e.col));
+
+    return obj;
+}
+
+static Napi::Object simbolo_entry_to_js(Napi::Env env, const SimboloEntry& s) {
+    Napi::Object obj = Napi::Object::New(env);
+
+    obj.Set("cadeia", Napi::String::New(env, s.cadeia));
+    obj.Set("token", Napi::String::New(env, s.token));
+    obj.Set("categoria", Napi::String::New(env, s.categoria_str()));
+    obj.Set("tipo", Napi::String::New(env, s.tipo));
+    obj.Set("valor", Napi::String::New(env, s.valor));
+    obj.Set("escopo", Napi::String::New(env, s.escopo));
+    obj.Set("utilizada", Napi::Boolean::New(env, s.utilizada));
+    obj.Set("linha", Napi::Number::New(env, s.linha));
+
+    Napi::Array params_arr = Napi::Array::New(env, s.parametros.size());
+    for (size_t i = 0; i < s.parametros.size(); ++i) {
+        Napi::Object p_obj = Napi::Object::New(env);
+        p_obj.Set("cadeia", Napi::String::New(env, s.parametros[i].cadeia));
+        p_obj.Set("tipo", Napi::String::New(env, s.parametros[i].tipo));
+        p_obj.Set("por_referencia", Napi::Boolean::New(env, s.parametros[i].por_referencia));
+        params_arr.Set(i, p_obj);
+    }
+    obj.Set("parametros", params_arr);
+
+    return obj;
+}
+
+static Napi::Object semantic_error_to_js(Napi::Env env, const SemanticError& e) {
+    Napi::Object obj = Napi::Object::New(env);
+
+    obj.Set("mensagem", Napi::String::New(env, e.mensagem));
+    obj.Set("linha", Napi::Number::New(env, e.linha));
+    obj.Set("col", Napi::Number::New(env, e.col));
+    obj.Set("tipo_erro", Napi::Number::New(env, static_cast<int>(e.tipo_erro)));
 
     return obj;
 }
@@ -270,6 +308,7 @@ Napi::Object createTokenTypeObject(Napi::Env env) {
     obj.Set("VarWord", (int)TokenType::VarWord);
     obj.Set("IntWord", (int)TokenType::IntWord);
     obj.Set("BooleanWord", (int)TokenType::BooleanWord);
+    obj.Set("RealWord", (int)TokenType::RealWord);
     obj.Set("ReadWord", (int)TokenType::ReadWord);
     obj.Set("WriteWord", (int)TokenType::WriteWord);
     obj.Set("TrueWord", (int)TokenType::TrueWord);
@@ -322,6 +361,8 @@ public:
     Napi::Value GetErrors(const Napi::CallbackInfo& info);
     Napi::Value GetSymbols(const Napi::CallbackInfo& info);
     Napi::Value GetSnapshots(const Napi::CallbackInfo& info);
+    Napi::Value GetSymbolTable(const Napi::CallbackInfo& info);
+    Napi::Value GetSemanticErrors(const Napi::CallbackInfo& info);
 
 private:
     std::unique_ptr<SyntacticAnalyzerProcedures> analyzer;
@@ -332,7 +373,9 @@ Napi::Object SyntacticAnalyzerProceduresWrapper::Init(Napi::Env env, Napi::Objec
         InstanceMethod("run", &SyntacticAnalyzerProceduresWrapper::Run),
         InstanceMethod("get_errors", &SyntacticAnalyzerProceduresWrapper::GetErrors),
         InstanceMethod("get_symbols", &SyntacticAnalyzerProceduresWrapper::GetSymbols),
-        InstanceMethod("get_snapshots", &SyntacticAnalyzerProceduresWrapper::GetSnapshots)
+        InstanceMethod("get_snapshots", &SyntacticAnalyzerProceduresWrapper::GetSnapshots),
+        InstanceMethod("get_tabela_simbolos", &SyntacticAnalyzerProceduresWrapper::GetSymbolTable),
+        InstanceMethod("get_erros_semanticos", &SyntacticAnalyzerProceduresWrapper::GetSemanticErrors)
     });
 
     exports.Set("SyntacticAnalyzerProcedures", func);
@@ -372,9 +415,7 @@ Napi::Value SyntacticAnalyzerProceduresWrapper::GetErrors(const Napi::CallbackIn
     uint32_t i = 0;
     while (!errors_queue.empty()) {
         arr.Set(i, syntactic_error_to_js(env, errors_queue.front()));
-        
         errors_queue.pop();
-        
         i++;
     }
 
@@ -393,9 +434,7 @@ Napi::Value SyntacticAnalyzerProceduresWrapper::GetSymbols(const Napi::CallbackI
     
     while (!symbols_stack.empty()) {
         i--;
-        
         arr.Set(i, stack_elem_to_js(env, symbols_stack.top()));
-        
         symbols_stack.pop();
     }
 
@@ -410,6 +449,32 @@ Napi::Value SyntacticAnalyzerProceduresWrapper::GetSnapshots(const Napi::Callbac
 
     for (size_t i = 0; i < snapshots.size(); i++) {
         arr.Set(i, snapshot_to_js(env, snapshots[i]));
+    }
+
+    return arr;
+}
+
+Napi::Value SyntacticAnalyzerProceduresWrapper::GetSymbolTable(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    const auto& tabela = analyzer->get_tabela_simbolos().get_entradas();
+    Napi::Array arr = Napi::Array::New(env, tabela.size());
+
+    for (size_t i = 0; i < tabela.size(); ++i) {
+        arr.Set(i, simbolo_entry_to_js(env, tabela[i]));
+    }
+
+    return arr;
+}
+
+Napi::Value SyntacticAnalyzerProceduresWrapper::GetSemanticErrors(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    const auto& erros = analyzer->get_erros_semanticos();
+    Napi::Array arr = Napi::Array::New(env, erros.size());
+
+    for (size_t i = 0; i < erros.size(); ++i) {
+        arr.Set(i, semantic_error_to_js(env, erros[i]));
     }
 
     return arr;
