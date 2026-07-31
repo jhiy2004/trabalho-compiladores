@@ -1,67 +1,55 @@
 #include "compilador.h"
 #include <iostream>
+#include <iomanip>
 #include <filesystem>
 #include "util.h"
 #include "analisador_sintatico_procedimento.h"
 
 int main() {
     std::string teste = parse_file_to_string(std::filesystem::path(EXAMPLES_DIR) / "correto1.txt");
-    /*
-    std::string teste = "(1 + 1) / 3 * 9\n   \n\n\n\n   p";
-
-    LexicalAnalysisCalc test(teste);
-
-    test.analyze();
-
-    const std::vector<TokenCalc> tokens = test.get_tokens();
-
-    print_tokens_calc(tokens);
-    */
 
     SyntacticAnalyzerProcedures analysis(teste);
-
     analysis.run();
 
-    auto snapshots = analysis.get_snapshots();
+    std::cout << "\n================================================\n";
+    std::cout << " TABELA DE SÍMBOLOS\n";
+    std::cout << "================================================\n";
+    std::cout << std::left
+              << std::setw(15) << "Cadeia"
+              << std::setw(15) << "Token"
+              << std::setw(15) << "Categoria"
+              << std::setw(12) << "Tipo"
+              << std::setw(10) << "Valor"
+              << std::setw(15) << "Escopo"
+              << std::setw(12) << "Utilizada"
+              << std::setw(8)  << "Linha"
+              << "\n";
+    std::cout << std::string(102, '-') << "\n";
 
-    int step = 1;
-    for (const auto& s : snapshots) {
-        std::cout << "================================================\n";
-        std::cout << " PASSO " << step++ << ": " << s.action << "\n";
-        std::cout << "================================================\n";
-
-        // --- SESSÃO DE ERROS ---
-        std::cout << "[ ERROS ]\n";
-        auto q = s.curr_errors; // Copia por valor para poder consumir
-        if (q.empty()) {
-            std::cout << "  (Nenhum erro)\n";
-        } else {
-            while (!q.empty()) {
-                // Se a sua struct tiver linha e coluna, você pode adicionar aqui:
-                // std::cout << "  - [L:" << q.front().line << ", C:" << q.front().col << "] ";
-                std::cout << "  - " << q.front().error << "\n";
-                q.pop(); // <- CORREÇÃO DO BUG DO LOOP INFINITO
-            }
-        }
-        std::cout << "\n";
-
-        // --- SESSÃO DA PILHA DE SÍMBOLOS ---
-        std::cout << "[ PILHA DE SÍMBOLOS (Topo -> Base) ]\n  ";
-        auto stack = s.curr_symbols; // Copia por valor para poder consumir
-        if (stack.empty()) {
-            std::cout << "(Vazia)";
-        } else {
-            bool first = true;
-            while (!stack.empty()) {
-                if (!first) std::cout << " | ";
-                std::cout << stack.top().name;
-                stack.pop();
-                first = false;
-            }
-        }
-        std::cout << "\n\n";
+    for (const auto& entry : analysis.get_tabela_simbolos().get_entradas()) {
+        std::cout << std::left
+                  << std::setw(15) << entry.cadeia
+                  << std::setw(15) << entry.token
+                  << std::setw(15) << entry.categoria_str()
+                  << std::setw(12) << (entry.tipo.empty() ? "-" : entry.tipo)
+                  << std::setw(10) << (entry.valor.empty() ? "-" : entry.valor)
+                  << std::setw(15) << entry.escopo
+                  << std::setw(12) << (entry.utilizada ? "Sim" : "Não")
+                  << std::setw(8)  << entry.linha
+                  << "\n";
     }
-    analysis.print_current_lexeme();
+
+    std::cout << "\n================================================\n";
+    std::cout << " ERROS SEMÂNTICOS\n";
+    std::cout << "================================================\n";
+    auto erros_sem = analysis.get_erros_semanticos();
+    if (erros_sem.empty()) {
+        std::cout << "Nenhum erro semântico encontrado!\n";
+    } else {
+        for (const auto& err : erros_sem) {
+            std::cout << "- [Linha " << err.linha << "] " << err.mensagem << "\n";
+        }
+    }
 
     return 0;
 }
