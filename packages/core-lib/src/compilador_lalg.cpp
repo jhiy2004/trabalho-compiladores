@@ -28,6 +28,7 @@ LexicalAnalysisLALG::reserved_words = {
     { "var", TokenType::VarWord },
     { "int", TokenType::IntWord },
     { "boolean", TokenType::BooleanWord },
+    { "real", TokenType::RealWord },
     { "read", TokenType::ReadWord },
     { "write", TokenType::WriteWord },
     { "true", TokenType::TrueWord },
