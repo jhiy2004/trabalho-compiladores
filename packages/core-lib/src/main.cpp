@@ -3,53 +3,91 @@
 #include <iomanip>
 #include <filesystem>
 #include "util.h"
-#include "analisador_sintatico_procedimento.h"
+#include <thread>
 
-int main() {
-    std::string teste = parse_file_to_string(std::filesystem::path(EXAMPLES_DIR) / "correto1.txt");
+#define NDEBUG
+#include "mepa.h"
 
-    SyntacticAnalyzerProcedures analysis(teste);
-    analysis.run();
+void background_output(Mepa& mepa) {
+    while (true) {
+        std::string s = mepa.pop_output();
 
-    std::cout << "\n================================================\n";
-    std::cout << " TABELA DE SÍMBOLOS\n";
-    std::cout << "================================================\n";
-    std::cout << std::left
-              << std::setw(15) << "Cadeia"
-              << std::setw(15) << "Token"
-              << std::setw(15) << "Categoria"
-              << std::setw(12) << "Tipo"
-              << std::setw(10) << "Valor"
-              << std::setw(15) << "Escopo"
-              << std::setw(12) << "Utilizada"
-              << std::setw(8)  << "Linha"
-              << "\n";
-    std::cout << std::string(102, '-') << "\n";
+        if (s == "__EXIT__")
+            break;
 
-    for (const auto& entry : analysis.get_tabela_simbolos().get_entradas()) {
-        std::cout << std::left
-                  << std::setw(15) << entry.cadeia
-                  << std::setw(15) << entry.token
-                  << std::setw(15) << entry.categoria_str()
-                  << std::setw(12) << (entry.tipo.empty() ? "-" : entry.tipo)
-                  << std::setw(10) << (entry.valor.empty() ? "-" : entry.valor)
-                  << std::setw(15) << entry.escopo
-                  << std::setw(12) << (entry.utilizada ? "Sim" : "Não")
-                  << std::setw(8)  << entry.linha
-                  << "\n";
+        std::cout << s << std::flush;
     }
+}
 
-    std::cout << "\n================================================\n";
-    std::cout << " ERROS SEMÂNTICOS\n";
-    std::cout << "================================================\n";
-    auto erros_sem = analysis.get_erros_semanticos();
-    if (erros_sem.empty()) {
-        std::cout << "Nenhum erro semântico encontrado!\n";
-    } else {
-        for (const auto& err : erros_sem) {
-            std::cout << "- [Linha " << err.linha << "] " << err.mensagem << "\n";
+void background_input(Mepa& mepa) {
+    while (true) {
+        switch (mepa.next_input_type()) {
+            case Mepa::InputType::Int: {
+                int value;
+                std::cin >> value;
+                mepa.push_input(value);
+                break;
+            }
+
+            case Mepa::InputType::Char: {
+                char value;
+                std::cin >> value;
+                mepa.push_input(value);
+                break;
+            }
+        
+            case Mepa::InputType::End: return;
         }
     }
+}
+
+void execute_generate_mepa_example_file(const std::filesystem::path& filename) {
+    try {
+        Mepa mepa(filename);
+
+        std::thread output_thread(background_output, std::ref(mepa));
+        std::thread input_thread(background_input, std::ref(mepa));
+
+        mepa.run();
+
+        input_thread.join();
+        output_thread.join();
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << "\n";
+    }
+}
+
+void execute_generate_mepa_example_vec(const std::vector<Command>& cmds) {
+    try {
+        Mepa mepa(cmds);
+
+        std::thread output_thread(background_output, std::ref(mepa));
+        std::thread input_thread(background_input, std::ref(mepa));
+
+        mepa.run();
+
+        input_thread.join();
+        output_thread.join();
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << "\n";
+    }
+}
+
+
+int main() {
+    auto filepath1{std::filesystem::path(EXAMPLES_DIR) / "mepa_example_1.lar"};
+    auto filepath2{std::filesystem::path(EXAMPLES_DIR) / "mepa_example_2.lar"};
+
+    auto vec1{generate_example1_builder()};
+    auto vec2{generate_example2_builder()};
+
+    save_program(vec1, filepath1);
+    save_program(vec2, filepath1);
+
+    execute_generate_mepa_example_file(filepath2);
+    execute_generate_mepa_example_file(filepath2);
+
+    //execute_generate_mepa_example_vec(vec2);
 
     return 0;
 }

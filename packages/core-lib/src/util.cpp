@@ -138,3 +138,137 @@ std::ostream& operator<<(std::ostream& os, const Token& t) {
        << t.col << ")";
     return os;
 }
+
+void save_program(const std::vector<Command>& cmds, const std::filesystem::path& filename) {
+    std::fstream file(filename, std::ios::binary | std::ios::out);
+
+    for (const auto& c : cmds) {
+        writeBinary(file, c.type);
+        if (c.arg) {
+            writeBinary(file, *c.arg);
+        }
+    }
+
+    file.close();
+}
+
+std::vector<Command> generate_example1_builder() {
+    CodeBuilder builder;
+
+    builder
+        .inpp()
+        .amem(1)
+        .amem(1)
+        .leit()
+        .armz(0)
+        .leit()
+        .armz(1)
+        .crvl(0)
+        .crvl(1)
+        .cmma()
+        .dsvf("0")
+        .crvl(0)
+        .impe()
+        .nada("0")
+        .para()
+    ;
+
+    return builder.get_commands();
+}
+
+std::vector<Command> generate_example2_builder() {
+    CodeBuilder builder;
+
+    builder
+        .inpp()
+
+        .amem(1)
+        .amem(1)
+        .amem(1)
+
+        .leit()
+        .armz(1)
+
+        .leit()
+        .armz(2)
+
+        .crvl(0)
+        .crvl(2)
+        .crct(10)
+        .crvl(1)
+        .divi()
+        .crct(1)
+        .soma()
+        .mult()
+        .soma()
+        .armz(0)
+
+        .crvl(0)
+        .impe()
+
+        .crvl(1)
+        .impe()
+
+        .crvl(2)
+        .impe()
+
+        .crvl(0)
+        .crct(0)
+        .cmma()
+
+        .dsvf("0")
+
+        .crvl(1)
+        .crct(0)
+        .cmma()
+
+        .dsvf("1")
+
+        .crvl(0)
+        .crvl(1)
+        .mult()
+        .armz(1)
+
+        .dsvs("2")
+
+        .nada("1")
+
+        .crvl(1)
+        .crvl(0)
+        .soma()
+        .armz(1)
+
+        .nada("2")
+
+        .dsvs("3")
+
+        .nada("0")
+
+        .crvl(1)
+        .crct(0)
+        .cmma()
+
+        .dsvf("4")
+
+        .crvl(1)
+        .crct(-1)
+        .mult()
+        .armz(1)
+
+        .dsvs("5")
+
+        .nada("4")
+
+        .crvl(1)
+        .crvl(2)
+        .soma()
+        .armz(1)
+
+        .nada("5")
+        .nada("3")
+
+        .para();
+
+    return builder.get_commands();
+}
+
