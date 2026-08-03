@@ -1,5 +1,6 @@
 #pragma once
 
+#include "command.h"
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -12,6 +13,7 @@
 #include <sstream>
 #include <mutex>
 #include <condition_variable>
+#include <utility>
 
 template <typename T>
 class ConcurrentQueue {
@@ -174,116 +176,6 @@ private:
     int st;
 };
 
-// TODO: Maybe explicitly disable padding for this structure
-struct Command {
-    enum Type : std::uint8_t {
-        CRCT, //1 arg
-        CRVL, //1 arg
-        ARMZ, //1 arg
-
-        // Arithmetic ops
-        SOMA, //0 arg
-        SUBT, //0 arg
-        MULT, //0 arg
-        DIVI, //0 arg
-        MODI, //0 arg
-
-        //Sets ops
-        INVR, //0 arg
-        CONJ, //0 arg
-        DISJ, //0 arg
-        NEGA, //0 arg
-        CMME, //0 arg
-        CMMA, //0 arg
-        CMIG, //0 arg
-        CMDG, //0 arg
-        CMAG, //0 arg
-        CMEG, //0 arg
-
-        //Jumps ops
-        DSVS, //1 arg
-        DSVF, //1 arg
-        NOPE, //0 arg
-
-        //I/O ops
-        LEIT, //0 arg
-        LECH, //0 arg
-        IMPR, //0 arg
-        IMPC, //0 arg
-        IMPE, //0 arg
-
-        //Ops
-        INPP, //0 arg
-        AMEM, //1 arg
-        DMEM, //1 arg
-        PARA, //0 arg
-    };
-
-    int get_number_args() {
-        switch(type) {
-            case CRCT:
-            case CRVL:
-            case ARMZ:
-            case AMEM:
-            case DMEM:
-            case DSVF:
-            case DSVS:
-                return 1;
-            default:
-                return 0;
-        };
-    }
-
-    const char* to_string() const {
-        switch(type) {
-            case CRCT: return "CRCT";
-            case CRVL: return "CRVL";
-            case ARMZ: return "ARMZ";
-            case SOMA: return "SOMA";
-            case SUBT: return "SUBT";
-            case MULT: return "MULT";
-            case DIVI: return "DIVI";
-            case MODI: return "MODI";
-            case INVR: return "INVR";
-            case CONJ: return "CONJ";
-            case DISJ: return "DISJ";
-            case NEGA: return "NEGA";
-            case CMME: return "CMME";
-            case CMMA: return "CMMA";
-            case CMIG: return "CMIG";
-            case CMDG: return "CMDG";
-            case CMAG: return "CMAG";
-            case CMEG: return "CMEG";
-            case DSVS: return "DSVS";
-            case DSVF: return "DSVF";
-            case NOPE: return "NOPE";
-            case LEIT: return "LEIT";
-            case LECH: return "LECH";
-            case IMPR: return "IMPR";
-            case IMPC: return "IMPC";
-            case IMPE: return "IMPE";
-            case INPP: return "INPP";
-            case AMEM: return "AMEM";
-            case DMEM: return "DMEM";
-            case PARA: return "PARA";
-            default: return "UNK";
-        }
-    }
-
-    friend std::ostream& operator<<(std::ostream& out, const Command& cmd) {
-        out << cmd.to_string();
-
-        if (cmd.arg) {
-            out << " " << *cmd.arg;
-        }
-
-        return out;
-    }
-
-    Type type;
-    std::optional<int> arg;
-};
-
 class Mepa {
 public:
     enum class InputType {
@@ -292,6 +184,16 @@ public:
         None,
         End,
     };
+
+    Mepa(const std::vector<Command>& cmds) : code_area(cmds) {
+        if (code_area.size() > 0 && code_area[0].type != Command::INPP) {
+            throw std::runtime_error("First command isn't a INPP");
+        }
+
+        if (code_area.size() > 0 && code_area[code_area.size() - 1].type != Command::PARA) {
+            throw std::runtime_error("Last command isn't a PARA");
+        }
+    }
 
     Mepa(const std::filesystem::path& filename) : file(filename, std::ios::in | std::ios::binary), data_area{} {
         if (!file.is_open()) {
@@ -586,7 +488,7 @@ private:
                 ++pc;
                 break;
 
-            case Command::NOPE:
+            case Command::NADA:
                 ++pc;
                 break;
             default:
@@ -604,3 +506,4 @@ private:
     RawQueue input;
     ConcurrentQueue<std::string> output;
 };
+
