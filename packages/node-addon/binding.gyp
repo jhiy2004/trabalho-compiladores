@@ -6,7 +6,9 @@
         "src/addon.cpp",
         "../core-lib/src/compilador.cpp",
         "../core-lib/src/compilador_lalg.cpp",
-        "../core-lib/src/analisador_sintatico_procedimento.cpp"
+        "../core-lib/src/analisador_sintatico_procedimento.cpp",
+        "../core-lib/src/tabela_simbolos.cpp",
+        "../core-lib/src/analisador_semantico.cpp"
       ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")",

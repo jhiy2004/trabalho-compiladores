@@ -12,6 +12,7 @@ enum class TokenType {
     VarWord,
     IntWord,
     BooleanWord,
+    RealWord,
     ReadWord,
     WriteWord,
     TrueWord,

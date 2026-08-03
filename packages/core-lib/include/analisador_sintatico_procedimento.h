@@ -1,6 +1,8 @@
 #pragma once
 
 #include "compilador_lalg.h"
+#include "tabela_simbolos.h"
+#include "analisador_semantico.h"
 #include <queue>
 #include <stack>
 
@@ -49,16 +51,27 @@ enum class NonTerminal {
     ExpressionList,
 };
 
+struct IdentInfo {
+    std::string cadeia;
+    unsigned int linha;
+    unsigned int col;
+};
+
 class SyntacticAnalyzerProcedures {
 public:
-    SyntacticAnalyzerProcedures(std::string_view text) : _lexical(text) {}
+    SyntacticAnalyzerProcedures(std::string_view text) 
+        : _lexical(text), analisador_semantico(tabela_simbolos) {}
 
     void run();
 
     std::queue<SyntacticError> get_errors() const;
     std::stack<StackElem> get_symbols() const;
     std::vector<Snapshot> get_snapshots() const;
+    const TabelaSimbolos& get_tabela_simbolos() const;
+    std::vector<SemanticError> get_erros_semanticos() const;
+
     void print_current_lexeme();
+
 private:
     void enqueue_error(std::string_view message);
     void stack_non_terminal(NonTerminal nt);
@@ -78,38 +91,42 @@ private:
 
     void program();
     void block();
-    void type();
+    std::string type();
     void variable_declaration_part();
     void variable_declaration();
-    void identifier_list();
+    std::vector<IdentInfo> identifier_list();
 
     void subroutines_declaration_part();
     void procedure_declaration();
-    void formal_parameters();
-    void formal_parameters_section();
+    void formal_parameters(std::vector<ParametroSimbolo>& params);
+    void formal_parameters_section(std::vector<ParametroSimbolo>& params);
 
     void compound_command();
 
     void command();
-    void assign();
-    void variable();
-    void procedure_call();
+    void assign(const IdentInfo& id_info);
+    ArgExpr variable();
+    void procedure_call(const IdentInfo& proc_info);
     void conditional_command_1();
     void repetitive_command_1();
 
-    void expression_list();
+    std::vector<ArgExpr> expression_list();
 
-    void expression();
-    void simple_expression();
-    void term();
+    ArgExpr expression();
+    ArgExpr simple_expression();
+    ArgExpr term();
     void relation();
-    void factor();
+    ArgExpr factor();
 
     LexicalAnalysisLALG _lexical;
     std::optional<Token> lookahead;
     std::stack<StackElem> symbols;
     std::queue<SyntacticError> errors;
     std::vector<Snapshot> snapshots;
+
+    TabelaSimbolos tabela_simbolos;
+    AnalisadorSemantico analisador_semantico;
+    std::string escopo_atual{"global"};
 
     static const std::unordered_map<NonTerminal, std::string> non_terminals;
     static const std::unordered_map<TokenType, std::string> terminals;

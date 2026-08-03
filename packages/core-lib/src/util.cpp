@@ -10,6 +10,7 @@ std::string type_to_str(TokenType t) {
         case TokenType::VarWord: return "VarWord";
         case TokenType::IntWord: return "IntWord";
         case TokenType::BooleanWord: return "BooleanWord";
+        case TokenType::RealWord: return "RealWord";
         case TokenType::ReadWord: return "ReadWord";
         case TokenType::WriteWord: return "WriteWord";
         case TokenType::TrueWord: return "TrueWord";
