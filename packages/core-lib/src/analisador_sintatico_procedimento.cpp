@@ -496,20 +496,9 @@ void SyntacticAnalyzerProcedures::command() {
         unsigned int col = lookahead->col;
         advance();
         expect(TokenType::OpenParOp, "Read command expects '('");
-        std::vector<ArgExpr> args = expression_list();
+        std::vector<ArgExpr> args = read_ids_list();
         expect(TokenType::CloseParOp, "Read command expects ')'");
         analisador_semantico.verificar_read(args, escopo_atual, line, col);
-
-        for (const auto& a : args) {
-            SimboloEntry* s = analisador_semantico.verificar_uso_identificador(a.cadeia, escopo_atual, a.linha, a.col);
-            
-            if (s) {
-                builder
-                    .leit()
-                    .armz(s->end)
-                ;
-            }
-        }
         return;
     }
 
@@ -518,20 +507,10 @@ void SyntacticAnalyzerProcedures::command() {
         unsigned int col = lookahead->col;
         advance();
         expect(TokenType::OpenParOp, "Write command expects '('");
-        std::vector<ArgExpr> args = expression_list();
+        std::vector<ArgExpr> args = expression_list(true);
         expect(TokenType::CloseParOp, "Write command expects ')'");
         analisador_semantico.verificar_write(args, escopo_atual, line, col);
 
-        for (const auto& a : args) {
-            SimboloEntry* s = analisador_semantico.verificar_uso_identificador(a.cadeia, escopo_atual, a.linha, a.col);
-            
-            if (s) {
-                builder
-                .crvl(s->end)
-                .impe()
-            ;
-            }
-        }
         return;
     }
 
@@ -749,7 +728,7 @@ void SyntacticAnalyzerProcedures::repetitive_command_1() {
     ;
 }
 
-std::vector<ArgExpr> SyntacticAnalyzerProcedures::expression_list() {
+std::vector<ArgExpr> SyntacticAnalyzerProcedures::expression_list(bool should_write) {
     std::vector<ArgExpr> list;
     stack_non_terminal(NonTerminal::Expression);
     record_snapshot("Stacked expression list");
@@ -757,6 +736,10 @@ std::vector<ArgExpr> SyntacticAnalyzerProcedures::expression_list() {
     pop_symbol();
     record_snapshot("Popped expression list");
     list.push_back(expression());
+
+    if (should_write) {
+        builder.impe();
+    }
 
     while (true) {
         if (!match(TokenType::CommaOp)) {
@@ -773,9 +756,65 @@ std::vector<ArgExpr> SyntacticAnalyzerProcedures::expression_list() {
         pop_symbol();
         record_snapshot("Popped expression");
         list.push_back(expression());
+
+        if (should_write) {
+            builder.impe();
+        }
     }
     return list;
 }
+
+std::vector<ArgExpr> SyntacticAnalyzerProcedures::read_ids_list() {
+    std::vector<ArgExpr> list;
+    
+    IdentInfo id_info = { lookahead->lexeme, lookahead->line, lookahead->col };
+
+    match(TokenType::Id);
+
+    SimboloEntry* s = analisador_semantico.verificar_uso_identificador(id_info.cadeia, escopo_atual, id_info.linha, id_info.col);            
+    if (s) {
+        list.push_back(ArgExpr{
+            .tipo = s->tipo,
+            .cadeia = id_info.cadeia,
+            .eh_id = true,
+            .linha = id_info.linha,
+            .col = id_info.col,
+        });
+
+        builder
+            .leit()
+            .armz(s->end)
+        ;
+    }
+
+    while (true) {
+        if (!match(TokenType::CommaOp)) {
+            break;
+        }
+
+        IdentInfo id_info = { lookahead->lexeme, lookahead->line, lookahead->col };
+        match(TokenType::Id);
+
+        SimboloEntry* s = analisador_semantico.verificar_uso_identificador(id_info.cadeia, escopo_atual, id_info.linha, id_info.col);            
+        if (s) {
+            list.push_back(ArgExpr{
+                .tipo = s->tipo,
+                .cadeia = id_info.cadeia,
+                .eh_id = true,
+                .linha = id_info.linha,
+                .col = id_info.col,
+            });
+
+            builder
+                .leit()
+                .armz(s->end)
+            ;
+        }
+    }
+
+    return list;
+}
+
 
 ArgExpr SyntacticAnalyzerProcedures::expression() {
     stack_non_terminal(NonTerminal::SimpleExpression);
@@ -792,23 +831,23 @@ ArgExpr SyntacticAnalyzerProcedures::expression() {
 
         pop_symbol();
         record_snapshot("Popped relation");
-        const char* rel = relation();
+        TokenType rel = relation();
 
         pop_symbol();
         record_snapshot("Popped simple_expression");
         ArgExpr right = simple_expression();
 
-        if (rel == "<=") {
+        if (rel == TokenType::LessEqualOp) {
             builder.cmeg();
-        } else if (rel == "<") {
+        } else if (rel == TokenType::LessOp) {
             builder.cmme();
-        } else if (rel == ">=") {
+        } else if (rel == TokenType::GreaterEqualOp) {
             builder.cmag();
-        } else if (rel == ">") {
+        } else if (rel == TokenType::GreaterOp) {
             builder.cmma();
-        } else if (rel == "<>") {
+        } else if (rel == TokenType::DiffOp) {
             builder.cmdg();
-        } else if (rel == "==") {
+        } else if (rel == TokenType::EqualOp) {
             builder.cmig();
         }
 
@@ -974,17 +1013,23 @@ bool SyntacticAnalyzerProcedures::is_relation() {
             peek(TokenType::GreaterOp));
 }
 
-const char* SyntacticAnalyzerProcedures::relation() {
-    if (match(TokenType::EqualOp)) return "==";
-    if (match(TokenType::DiffOp)) return "<>";
-    if (match(TokenType::LessOp)) return "<";
-    if (match(TokenType::LessEqualOp)) return "<=";
-    if (match(TokenType::GreaterEqualOp)) return ">=";
-    if (expect(TokenType::GreaterOp, "Expect a valid relation")) {
-        return ">";
-    };
+TokenType SyntacticAnalyzerProcedures::relation() {
+    const TokenType curr_type = lookahead->type;
 
-    return "unk";
+    switch (curr_type) {
+        case TokenType::EqualOp:
+        case TokenType::DiffOp:
+        case TokenType::LessOp:
+        case TokenType::LessEqualOp:
+        case TokenType::GreaterEqualOp:
+        case TokenType::GreaterOp:
+            advance();
+            return curr_type;
+
+        default:
+            enqueue_error("Expect a valid relation");
+            return TokenType::UNK;
+    }
 }
 
 ArgExpr SyntacticAnalyzerProcedures::factor() {

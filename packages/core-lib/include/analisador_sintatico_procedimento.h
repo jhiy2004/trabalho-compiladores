@@ -113,12 +113,13 @@ private:
     void conditional_command_1();
     void repetitive_command_1();
 
-    std::vector<ArgExpr> expression_list();
+    std::vector<ArgExpr> expression_list(bool should_write = false);
+    std::vector<ArgExpr> read_ids_list();
 
     ArgExpr expression();
     ArgExpr simple_expression();
     ArgExpr term();
-    const char* relation();
+    TokenType relation();
     ArgExpr factor();
 
     LexicalAnalysisLALG _lexical;
