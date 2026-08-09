@@ -37,6 +37,8 @@ struct SimboloEntry {
             default: return "Desconhecido";
         }
     }
+
+    int end;
 };
 
 class TabelaSimbolos {

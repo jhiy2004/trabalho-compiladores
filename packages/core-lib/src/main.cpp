@@ -5,6 +5,8 @@
 #include "util.h"
 #include <thread>
 
+#include "analisador_sintatico_procedimento.h"
+
 #define NDEBUG
 #include "mepa.h"
 
@@ -75,19 +77,35 @@ void execute_generate_mepa_example_vec(const std::vector<Command>& cmds) {
 
 
 int main() {
-    auto filepath1{std::filesystem::path(EXAMPLES_DIR) / "mepa_example_1.lar"};
-    auto filepath2{std::filesystem::path(EXAMPLES_DIR) / "mepa_example_2.lar"};
+    /*
+        auto filepath1{std::filesystem::path(EXAMPLES_DIR) / "mepa_example_1.lar"};
+        auto filepath2{std::filesystem::path(EXAMPLES_DIR) / "mepa_example_2.lar"};
 
-    auto vec1{generate_example1_builder()};
-    auto vec2{generate_example2_builder()};
+        auto vec1{generate_example1_builder()};
+        auto vec2{generate_example2_builder()};
 
-    save_program(vec1, filepath1);
-    save_program(vec2, filepath1);
+        save_program(vec1, filepath1);
+        save_program(vec2, filepath1);
 
-    execute_generate_mepa_example_file(filepath2);
-    execute_generate_mepa_example_file(filepath2);
+        execute_generate_mepa_example_file(filepath2);
+        execute_generate_mepa_example_file(filepath2);
 
-    //execute_generate_mepa_example_vec(vec2);
+        //execute_generate_mepa_example_vec(vec2);
+    */
+
+    auto slide{std::filesystem::path(EXAMPLES_DIR) / "slide.txt"};
+
+    auto code = parse_file_to_string(slide);
+    
+    SyntacticAnalyzerProcedures analyzer(code);
+
+    analyzer.run();
+
+    std::vector<Command> commands = analyzer.get_commands();
+
+
+    std::cout << program_to_string(commands);
+
 
     return 0;
 }
