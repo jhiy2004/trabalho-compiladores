@@ -1,5 +1,7 @@
 #include <napi.h>
+#include <thread>
 #include "compilador.h"
+
 #include "compilador_lalg.h"
 #include "analisador_sintatico_procedimento.h"
 #include "tabela_simbolos.h"
@@ -1002,6 +1004,7 @@ private:
     Napi::Value PushInput(const Napi::CallbackInfo& info);
     Napi::Value NextInputType(const Napi::CallbackInfo& info);
     Napi::Value Run(const Napi::CallbackInfo& info);
+    Napi::Value RunInBackground(const Napi::CallbackInfo& info);
 
     std::unique_ptr<Mepa> mepa;
 };
@@ -1033,8 +1036,14 @@ Napi::Object MepaWrapper::Init(
                 "run",
                 &MepaWrapper::Run
             ),
+
+            InstanceMethod(
+                "runInBackground",
+                &MepaWrapper::RunInBackground
+            ),
         }
     );
+
 
     exports.Set("Mepa", func);
 
@@ -1186,6 +1195,23 @@ Napi::Value MepaWrapper::Run(
 
     return env.Undefined();
 }
+
+Napi::Value MepaWrapper::RunInBackground(
+    const Napi::CallbackInfo& info
+) {
+    Napi::Env env = info.Env();
+
+    std::thread t([this]() {
+        try {
+            mepa->run();
+        } catch (...) {
+        }
+    });
+    t.detach();
+
+    return env.Undefined();
+}
+
 
 //////////////////////////////////////////////////////////////
 // MODULE INIT

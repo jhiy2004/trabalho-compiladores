@@ -7,9 +7,18 @@ export function parseSourceLALG(source: string) {
 
   parser.run();
 
+  const rawCommands = parser.get_commands() || [];
+  const mepaCommands = rawCommands.map((cmd: any) => cmd.toString());
+  const mepaCode = mepaCommands.join("\n");
+
   return {
     errors: parser.get_errors(),
     symbols: parser.get_symbols(),
     snapshots: parser.get_snapshots(),
+    symbolTable: parser.get_tabela_simbolos(),
+    semanticErrors: parser.get_erros_semanticos(),
+    mepaCommands,
+    mepaCode,
   };
 }
+
