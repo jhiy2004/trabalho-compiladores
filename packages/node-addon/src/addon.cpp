@@ -5,6 +5,9 @@
 #include "tabela_simbolos.h"
 #include "analisador_semantico.h"
 
+#include "util.h"
+#include "mepa.h"
+
 static Napi::Object stack_elem_to_js(Napi::Env env, const StackElem& s) {
     Napi::Object obj = Napi::Object::New(env);
 
@@ -348,6 +351,488 @@ Napi::Object createTokenTypeObject(Napi::Env env) {
     return obj;
 }
 
+//
+// Command Wrapper
+//
+
+class CommandWrapper : public Napi::ObjectWrap<CommandWrapper> {
+public:
+    static Napi::Object Init(Napi::Env env, Napi::Object exports);
+
+    CommandWrapper(const Napi::CallbackInfo& info);
+
+    static Napi::Object NewInstance(
+        Napi::Env env,
+        const Command& command
+    );
+
+    const Command& GetCommand() const {
+        return command;
+    }
+private:
+    static Napi::FunctionReference constructor;
+
+    Command command;
+
+    // Properties
+    Napi::Value GetType(const Napi::CallbackInfo& info);
+    void SetType(const Napi::CallbackInfo& info, const Napi::Value& value);
+
+    Napi::Value GetArg(const Napi::CallbackInfo& info);
+    void SetArg(const Napi::CallbackInfo& info, const Napi::Value& value);
+
+    Napi::Value GetDst(const Napi::CallbackInfo& info);
+    void SetDst(const Napi::CallbackInfo& info, const Napi::Value& value);
+
+    // Methods
+    Napi::Value GetNumberArgs(const Napi::CallbackInfo& info);
+    Napi::Value IsJump(const Napi::CallbackInfo& info);
+    Napi::Value ToString(const Napi::CallbackInfo& info);
+
+    static Command::Type ParseType(const Napi::Value& value);
+    static Napi::String TypeToJS(Napi::Env env, Command::Type type);
+};
+
+Napi::FunctionReference CommandWrapper::constructor;
+
+Napi::Object CommandWrapper::Init(
+    Napi::Env env,
+    Napi::Object exports
+) {
+    Napi::Function func = DefineClass(
+        env,
+        "Command",
+        {
+            InstanceAccessor(
+                "type",
+                &CommandWrapper::GetType,
+                &CommandWrapper::SetType
+            ),
+
+            InstanceAccessor(
+                "arg",
+                &CommandWrapper::GetArg,
+                &CommandWrapper::SetArg
+            ),
+
+            InstanceAccessor(
+                "dst",
+                &CommandWrapper::GetDst,
+                &CommandWrapper::SetDst
+            ),
+
+            InstanceMethod(
+                "getNumberArgs",
+                &CommandWrapper::GetNumberArgs
+            ),
+
+            InstanceMethod(
+                "isJump",
+                &CommandWrapper::IsJump
+            ),
+
+            InstanceMethod(
+                "toString",
+                &CommandWrapper::ToString
+            ),
+        }
+    );
+
+    constructor = Napi::Persistent(func);
+    constructor.SuppressDestruct();
+
+    exports.Set("Command", func);
+
+    // Export enum values.
+    Napi::Object types = Napi::Object::New(env);
+
+    types.Set("CRCT", Napi::Number::New(env, Command::CRCT));
+    types.Set("CRVL", Napi::Number::New(env, Command::CRVL));
+    types.Set("ARMZ", Napi::Number::New(env, Command::ARMZ));
+
+    types.Set("SOMA", Napi::Number::New(env, Command::SOMA));
+    types.Set("SUBT", Napi::Number::New(env, Command::SUBT));
+    types.Set("MULT", Napi::Number::New(env, Command::MULT));
+    types.Set("DIVI", Napi::Number::New(env, Command::DIVI));
+    types.Set("MODI", Napi::Number::New(env, Command::MODI));
+
+    types.Set("INVR", Napi::Number::New(env, Command::INVR));
+    types.Set("CONJ", Napi::Number::New(env, Command::CONJ));
+    types.Set("DISJ", Napi::Number::New(env, Command::DISJ));
+    types.Set("NEGA", Napi::Number::New(env, Command::NEGA));
+    types.Set("CMME", Napi::Number::New(env, Command::CMME));
+    types.Set("CMMA", Napi::Number::New(env, Command::CMMA));
+    types.Set("CMIG", Napi::Number::New(env, Command::CMIG));
+    types.Set("CMDG", Napi::Number::New(env, Command::CMDG));
+    types.Set("CMAG", Napi::Number::New(env, Command::CMAG));
+    types.Set("CMEG", Napi::Number::New(env, Command::CMEG));
+
+    types.Set("DSVS", Napi::Number::New(env, Command::DSVS));
+    types.Set("DSVF", Napi::Number::New(env, Command::DSVF));
+    types.Set("NADA", Napi::Number::New(env, Command::NADA));
+
+    types.Set("LEIT", Napi::Number::New(env, Command::LEIT));
+    types.Set("LECH", Napi::Number::New(env, Command::LECH));
+    types.Set("IMPR", Napi::Number::New(env, Command::IMPR));
+    types.Set("IMPC", Napi::Number::New(env, Command::IMPC));
+    types.Set("IMPE", Napi::Number::New(env, Command::IMPE));
+
+    types.Set("INPP", Napi::Number::New(env, Command::INPP));
+    types.Set("AMEM", Napi::Number::New(env, Command::AMEM));
+    types.Set("DMEM", Napi::Number::New(env, Command::DMEM));
+    types.Set("PARA", Napi::Number::New(env, Command::PARA));
+
+    exports.Set("CommandType", types);
+
+    return exports;
+}
+
+
+CommandWrapper::CommandWrapper(const Napi::CallbackInfo& info)
+    : Napi::ObjectWrap<CommandWrapper>(info),
+      command{Command::NADA, std::nullopt, std::nullopt} {
+
+    Napi::Env env = info.Env();
+
+    if (info.Length() == 1 && info[0].IsExternal()) {
+        Command* command =
+            info[0].As<Napi::External<Command>>().Data();
+
+        this->command = *command;
+        return;
+    }
+
+    try {
+        command.type = ParseType(info[0]);
+    }
+    catch (const std::exception& e) {
+        Napi::TypeError::New(
+            env,
+            e.what()
+        ).ThrowAsJavaScriptException();
+
+        return;
+    }
+
+    // arg
+    if (info.Length() >= 2 && !info[1].IsNull() && !info[1].IsUndefined()) {
+        if (!info[1].IsNumber()) {
+            Napi::TypeError::New(
+                env,
+                "arg must be a number or null"
+            ).ThrowAsJavaScriptException();
+
+            return;
+        }
+
+        command.arg = info[1].As<Napi::Number>().Int32Value();
+    }
+
+    // dst
+    if (info.Length() >= 3 && !info[2].IsNull() && !info[2].IsUndefined()) {
+        if (!info[2].IsString()) {
+            Napi::TypeError::New(
+                env,
+                "dst must be a string or null"
+            ).ThrowAsJavaScriptException();
+
+            return;
+        }
+
+        command.dst = info[2].As<Napi::String>().Utf8Value();
+    }
+}
+
+
+// ---------------------------------------------------------
+// type
+// ---------------------------------------------------------
+
+Napi::Value CommandWrapper::GetType(
+    const Napi::CallbackInfo& info
+) {
+    return TypeToJS(
+        info.Env(),
+        command.type
+    );
+}
+
+
+void CommandWrapper::SetType(
+    const Napi::CallbackInfo& info,
+    const Napi::Value& value
+) {
+    try {
+        command.type = ParseType(value);
+    }
+    catch (const std::exception& e) {
+        Napi::TypeError::New(
+            info.Env(),
+            e.what()
+        ).ThrowAsJavaScriptException();
+    }
+}
+
+
+// ---------------------------------------------------------
+// arg
+// ---------------------------------------------------------
+
+Napi::Value CommandWrapper::GetArg(
+    const Napi::CallbackInfo& info
+) {
+    if (!command.arg) {
+        return info.Env().Null();
+    }
+
+    return Napi::Number::New(
+        info.Env(),
+        *command.arg
+    );
+}
+
+
+void CommandWrapper::SetArg(
+    const Napi::CallbackInfo& info,
+    const Napi::Value& value
+) {
+    if (value.IsNull() || value.IsUndefined()) {
+        command.arg.reset();
+        return;
+    }
+
+    if (!value.IsNumber()) {
+        Napi::TypeError::New(
+            info.Env(),
+            "arg must be a number or null"
+        ).ThrowAsJavaScriptException();
+
+        return;
+    }
+
+    command.arg = value.As<Napi::Number>().Int32Value();
+}
+
+
+// ---------------------------------------------------------
+// dst
+// ---------------------------------------------------------
+
+Napi::Value CommandWrapper::GetDst(
+    const Napi::CallbackInfo& info
+) {
+    if (!command.dst) {
+        return info.Env().Null();
+    }
+
+    return Napi::String::New(
+        info.Env(),
+        *command.dst
+    );
+}
+
+
+void CommandWrapper::SetDst(
+    const Napi::CallbackInfo& info,
+    const Napi::Value& value
+) {
+    if (value.IsNull() || value.IsUndefined()) {
+        command.dst.reset();
+        return;
+    }
+
+    if (!value.IsString()) {
+        Napi::TypeError::New(
+            info.Env(),
+            "dst must be a string or null"
+        ).ThrowAsJavaScriptException();
+
+        return;
+    }
+
+    command.dst = value.As<Napi::String>().Utf8Value();
+}
+
+
+// ---------------------------------------------------------
+// Methods
+// ---------------------------------------------------------
+
+Napi::Value CommandWrapper::GetNumberArgs(
+    const Napi::CallbackInfo& info
+) {
+    return Napi::Number::New(
+        info.Env(),
+        command.get_number_args()
+    );
+}
+
+
+Napi::Value CommandWrapper::IsJump(
+    const Napi::CallbackInfo& info
+) {
+    return Napi::Boolean::New(
+        info.Env(),
+        command.is_jump()
+    );
+}
+
+
+Napi::Value CommandWrapper::ToString(
+    const Napi::CallbackInfo& info
+) {
+    std::string result = command.to_string();
+
+    if (command.arg) {
+        result += " ";
+        result += std::to_string(*command.arg);
+    }
+
+    return Napi::String::New(
+        info.Env(),
+        result
+    );
+}
+
+
+// ---------------------------------------------------------
+// Conversion
+// ---------------------------------------------------------
+
+Command::Type CommandWrapper::ParseType(
+    const Napi::Value& value
+) {
+    if (value.IsNumber()) {
+        auto n = value.As<Napi::Number>().Int32Value();
+
+        if (n < 0 || n > static_cast<int>(Command::PARA)) {
+            throw std::invalid_argument(
+                "Invalid Command type"
+            );
+        }
+
+        return static_cast<Command::Type>(n);
+    }
+
+    if (!value.IsString()) {
+        throw std::invalid_argument(
+            "Command type must be a string or number"
+        );
+    }
+
+    const std::string type =
+        value.As<Napi::String>().Utf8Value();
+
+#define COMMAND_TYPE(name) \
+    if (type == #name) return Command::name;
+
+    COMMAND_TYPE(CRCT)
+    COMMAND_TYPE(CRVL)
+    COMMAND_TYPE(ARMZ)
+
+    COMMAND_TYPE(SOMA)
+    COMMAND_TYPE(SUBT)
+    COMMAND_TYPE(MULT)
+    COMMAND_TYPE(DIVI)
+    COMMAND_TYPE(MODI)
+
+    COMMAND_TYPE(INVR)
+    COMMAND_TYPE(CONJ)
+    COMMAND_TYPE(DISJ)
+    COMMAND_TYPE(NEGA)
+    COMMAND_TYPE(CMME)
+    COMMAND_TYPE(CMMA)
+    COMMAND_TYPE(CMIG)
+    COMMAND_TYPE(CMDG)
+    COMMAND_TYPE(CMAG)
+    COMMAND_TYPE(CMEG)
+
+    COMMAND_TYPE(DSVS)
+    COMMAND_TYPE(DSVF)
+    COMMAND_TYPE(NADA)
+
+    COMMAND_TYPE(LEIT)
+    COMMAND_TYPE(LECH)
+    COMMAND_TYPE(IMPR)
+    COMMAND_TYPE(IMPC)
+    COMMAND_TYPE(IMPE)
+
+    COMMAND_TYPE(INPP)
+    COMMAND_TYPE(AMEM)
+    COMMAND_TYPE(DMEM)
+    COMMAND_TYPE(PARA)
+
+#undef COMMAND_TYPE
+
+    throw std::invalid_argument(
+        "Unknown Command type: " + type
+    );
+}
+
+
+Napi::String CommandWrapper::TypeToJS(
+    Napi::Env env,
+    Command::Type type
+) {
+    return Napi::String::New(
+        env,
+        [&]() -> const char* {
+            switch (type) {
+                case Command::CRCT: return "CRCT";
+                case Command::CRVL: return "CRVL";
+                case Command::ARMZ: return "ARMZ";
+
+                case Command::SOMA: return "SOMA";
+                case Command::SUBT: return "SUBT";
+                case Command::MULT: return "MULT";
+                case Command::DIVI: return "DIVI";
+                case Command::MODI: return "MODI";
+
+                case Command::INVR: return "INVR";
+                case Command::CONJ: return "CONJ";
+                case Command::DISJ: return "DISJ";
+                case Command::NEGA: return "NEGA";
+                case Command::CMME: return "CMME";
+                case Command::CMMA: return "CMMA";
+                case Command::CMIG: return "CMIG";
+                case Command::CMDG: return "CMDG";
+                case Command::CMAG: return "CMAG";
+                case Command::CMEG: return "CMEG";
+
+                case Command::DSVS: return "DSVS";
+                case Command::DSVF: return "DSVF";
+                case Command::NADA: return "NADA";
+
+                case Command::LEIT: return "LEIT";
+                case Command::LECH: return "LECH";
+                case Command::IMPR: return "IMPR";
+                case Command::IMPC: return "IMPC";
+                case Command::IMPE: return "IMPE";
+
+                case Command::INPP: return "INPP";
+                case Command::AMEM: return "AMEM";
+                case Command::DMEM: return "DMEM";
+                case Command::PARA: return "PARA";
+
+                default: return "UNK";
+            }
+        }()
+    );
+}
+
+Napi::Object CommandWrapper::NewInstance(
+    Napi::Env env,
+    const Command& command
+) {
+    Napi::External<Command> external =
+        Napi::External<Command>::New(
+            env,
+            const_cast<Command*>(&command)
+        );
+
+    return constructor.New({ external });
+}
+
 //////////////////////////////////////////////////////////////
 // Syntactic Analyzer
 //////////////////////////////////////////////////////////////
@@ -363,7 +848,7 @@ public:
     Napi::Value GetSnapshots(const Napi::CallbackInfo& info);
     Napi::Value GetSymbolTable(const Napi::CallbackInfo& info);
     Napi::Value GetSemanticErrors(const Napi::CallbackInfo& info);
-
+    Napi::Value GetCommands(const Napi::CallbackInfo& info);
 private:
     std::unique_ptr<SyntacticAnalyzerProcedures> analyzer;
 };
@@ -375,7 +860,8 @@ Napi::Object SyntacticAnalyzerProceduresWrapper::Init(Napi::Env env, Napi::Objec
         InstanceMethod("get_symbols", &SyntacticAnalyzerProceduresWrapper::GetSymbols),
         InstanceMethod("get_snapshots", &SyntacticAnalyzerProceduresWrapper::GetSnapshots),
         InstanceMethod("get_tabela_simbolos", &SyntacticAnalyzerProceduresWrapper::GetSymbolTable),
-        InstanceMethod("get_erros_semanticos", &SyntacticAnalyzerProceduresWrapper::GetSemanticErrors)
+        InstanceMethod("get_erros_semanticos", &SyntacticAnalyzerProceduresWrapper::GetSemanticErrors),
+        InstanceMethod("get_commands", &SyntacticAnalyzerProceduresWrapper::GetCommands)
     });
 
     exports.Set("SyntacticAnalyzerProcedures", func);
@@ -480,6 +966,227 @@ Napi::Value SyntacticAnalyzerProceduresWrapper::GetSemanticErrors(const Napi::Ca
     return arr;
 }
 
+Napi::Value SyntacticAnalyzerProceduresWrapper::GetCommands(
+    const Napi::CallbackInfo& info
+) {
+    Napi::Env env = info.Env();
+
+    const std::vector<Command> commands =
+        analyzer->get_commands();
+
+    Napi::Array result =
+        Napi::Array::New(env, commands.size());
+
+    for (std::size_t i = 0; i < commands.size(); ++i) {
+        result.Set(
+            i,
+            CommandWrapper::NewInstance(env, commands[i])
+        );
+    }
+
+    return result;
+}
+
+//
+// Mepa
+//
+
+class MepaWrapper : public Napi::ObjectWrap<MepaWrapper> {
+public:
+    static Napi::Object Init(Napi::Env env, Napi::Object exports);
+
+    MepaWrapper(const Napi::CallbackInfo& info);
+
+private:
+    Napi::Value PopOutput(const Napi::CallbackInfo& info);
+    Napi::Value PushInput(const Napi::CallbackInfo& info);
+    Napi::Value NextInputType(const Napi::CallbackInfo& info);
+    Napi::Value Run(const Napi::CallbackInfo& info);
+
+    std::unique_ptr<Mepa> mepa;
+};
+
+Napi::Object MepaWrapper::Init(
+    Napi::Env env,
+    Napi::Object exports
+) {
+    Napi::Function func = DefineClass(
+        env,
+        "Mepa",
+        {
+            InstanceMethod(
+                "popOutput",
+                &MepaWrapper::PopOutput
+            ),
+
+            InstanceMethod(
+                "pushInput",
+                &MepaWrapper::PushInput
+            ),
+
+            InstanceMethod(
+                "nextInputType",
+                &MepaWrapper::NextInputType
+            ),
+
+            InstanceMethod(
+                "run",
+                &MepaWrapper::Run
+            ),
+        }
+    );
+
+    exports.Set("Mepa", func);
+
+    return exports;
+}
+
+MepaWrapper::MepaWrapper(
+    const Napi::CallbackInfo& info
+)
+    : Napi::ObjectWrap<MepaWrapper>(info) {
+
+    Napi::Env env = info.Env();
+
+    if (info.Length() != 1) {
+        Napi::TypeError::New(
+            env,
+            "Expected an array of commands"
+        ).ThrowAsJavaScriptException();
+
+        return;
+    }
+
+    if (!info[0].IsArray()) {
+        Napi::TypeError::New(
+            env,
+            "Expected an array of commands"
+        ).ThrowAsJavaScriptException();
+
+        return;
+    }
+
+    Napi::Array js_commands =
+        info[0].As<Napi::Array>();
+
+    std::vector<Command> commands;
+    commands.reserve(js_commands.Length());
+
+    for (std::size_t i = 0; i < js_commands.Length(); ++i) {
+        Napi::Value value = js_commands.Get(i);
+
+        if (!value.IsObject()) {
+            Napi::TypeError::New(
+                env,
+                "Each command must be a Command object"
+            ).ThrowAsJavaScriptException();
+
+            return;
+        }
+
+        Napi::Object object = value.As<Napi::Object>();
+
+        CommandWrapper* wrapper = Napi::ObjectWrap<CommandWrapper>::Unwrap(object);
+
+        commands.push_back(wrapper->GetCommand());
+    }
+
+    mepa = std::make_unique<Mepa>(commands);
+}
+
+Napi::Value MepaWrapper::PopOutput(
+    const Napi::CallbackInfo& info
+) {
+    Napi::Env env = info.Env();
+
+    return Napi::String::New(
+        env,
+        mepa->pop_output()
+    );
+}
+
+Napi::Value MepaWrapper::PushInput(
+    const Napi::CallbackInfo& info
+) {
+    Napi::Env env = info.Env();
+
+    if (info.Length() != 1) {
+        Napi::TypeError::New(
+            env,
+            "Expected one argument"
+        ).ThrowAsJavaScriptException();
+
+        return env.Undefined();
+    }
+
+    Napi::Value value = info[0];
+
+    if (value.IsNumber()) {
+        mepa->push_input(
+            value.As<Napi::Number>().Int32Value()
+        );
+
+        return env.Undefined();
+    }
+
+    if (value.IsString()) {
+        std::string str =
+            value.As<Napi::String>().Utf8Value();
+
+        if (str.size() != 1) {
+            Napi::TypeError::New(
+                env,
+                "Expected a single character"
+            ).ThrowAsJavaScriptException();
+
+            return env.Undefined();
+        }
+
+        mepa->push_input(str[0]);
+
+        return env.Undefined();
+    }
+
+    Napi::TypeError::New(
+        env,
+        "Expected a number or a character"
+    ).ThrowAsJavaScriptException();
+
+    return env.Undefined();
+}
+
+Napi::Value MepaWrapper::NextInputType(
+    const Napi::CallbackInfo& info
+) {
+    Napi::Env env = info.Env();
+
+    switch (mepa->next_input_type()) {
+        case Mepa::InputType::Int:
+            return Napi::String::New(env, "int");
+
+        case Mepa::InputType::Char:
+            return Napi::String::New(env, "char");
+
+        case Mepa::InputType::None:
+            return Napi::String::New(env, "none");
+
+        case Mepa::InputType::End:
+            return Napi::String::New(env, "end");
+    }
+
+    return env.Null();
+}
+
+Napi::Value MepaWrapper::Run(
+    const Napi::CallbackInfo& info
+) {
+    Napi::Env env = info.Env();
+
+    mepa->run();
+
+    return env.Undefined();
+}
+
 //////////////////////////////////////////////////////////////
 // MODULE INIT
 //////////////////////////////////////////////////////////////
@@ -491,6 +1198,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     LexicalAnalysisCalcWrapper::Init(env, exports);
     LexicalAnalysisLALGWrapper::Init(env, exports);
     SyntacticAnalyzerProceduresWrapper::Init(env, exports);
+    CommandWrapper::Init(env, exports);
+    MepaWrapper::Init(env, exports);
 
     exports.Set("TokenTypeCalc", createTokenTypeCalcObject(env));
     exports.Set("TokenType", createTokenTypeObject(env));
