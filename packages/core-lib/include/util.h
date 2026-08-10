@@ -1,5 +1,6 @@
 #pragma once
 
+#include <sstream>
 #include <string>
 #include <filesystem>
 #include <iostream>
@@ -21,3 +22,5 @@ void writeBinary(std::ostream& os, const T& value) {
 void save_program(const std::vector<Command>& cmds, const std::filesystem::path& filename);
 std::vector<Command> generate_example1_builder();
 std::vector<Command> generate_example2_builder();
+
+std::string program_to_string(const std::vector<Command> cmds);

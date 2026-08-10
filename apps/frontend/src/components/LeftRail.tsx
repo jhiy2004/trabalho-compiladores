@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MoreHorizontal, Braces, ScanText, Network, Sigma, Table2 } from "lucide-react";
+import { MoreHorizontal, Braces, ScanText, Network, Table2, Cpu } from "lucide-react";
 import type { ViewKey } from "../ui/views";
 import { VIEW_LABEL } from "../ui/views";
 
@@ -11,10 +11,11 @@ type Props = {
 const items: Array<{ key: ViewKey; icon: React.ReactNode }> = [
   { key: "code", icon: <Braces className="w-5 h-5" /> },
   { key: "lex", icon: <ScanText className="w-5 h-5" /> },
-  { key: "symbols", icon: <Table2 className="w-5 h-5" /> },
   { key: "syntax", icon: <Network className="w-5 h-5" /> },
-  { key: "semantic", icon: <Sigma className="w-5 h-5" /> },
+  { key: "symbolsAndSemantic", icon: <Table2 className="w-5 h-5" /> },
+  { key: "mepa", icon: <Cpu className="w-5 h-5" /> },
 ];
+
 
 export default function LeftRail({ current, onPick }: Props) {
   const [open, setOpen] = useState(false);

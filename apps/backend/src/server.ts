@@ -4,6 +4,7 @@ import morgan from "morgan";
 
 import { lexerRouter } from "./routes/lexer";
 import { syntacticRouter } from "./routes/syntactic";
+import { mepaRouter } from "./routes/mepa";
 
 const app = express();
 
@@ -17,5 +18,8 @@ app.use("/api", lexerRouter);
 
 app.use("/api", syntacticRouter);
 
+app.use("/api", mepaRouter);
+
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 app.listen(PORT, () => console.log(`Backend on http://localhost:${PORT}`));
+

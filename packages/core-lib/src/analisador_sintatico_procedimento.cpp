@@ -62,6 +62,8 @@ void SyntacticAnalyzerProcedures::pop_symbol() {
 }
 
 void SyntacticAnalyzerProcedures::program() {
+    builder.inpp();
+
     escopo_atual = "global";
 
     stack_terminal(TokenType::DotOp);
@@ -106,6 +108,8 @@ void SyntacticAnalyzerProcedures::program() {
     expect(TokenType::DotOp, "program without dot");
     pop_symbol();
     record_snapshot("Popped .");
+
+    builder.para();
 }
 
 void SyntacticAnalyzerProcedures::record_snapshot(const std::string action) {
@@ -185,14 +189,14 @@ std::string SyntacticAnalyzerProcedures::type() {
     return "desconhecido";
 }
 
-void SyntacticAnalyzerProcedures::variable_declaration_part() {
+void SyntacticAnalyzerProcedures::variable_declaration_part() {    
     if (!is_type()) {
         return;
     }
 
     stack_terminal(TokenType::SemiColonOp);
     stack_non_terminal(NonTerminal::VariableDeclaration);
-    record_snapshot("Stacked variable_declaration_part");
+    record_snapshot("Stacked variable_declaration_part");\
 
     pop_symbol();
     record_snapshot("Popped <variable_declaration>");
@@ -249,8 +253,11 @@ void SyntacticAnalyzerProcedures::variable_declaration() {
             .valor = "",
             .escopo = escopo_atual,
             .utilizada = false,
-            .linha = id.linha
+            .linha = id.linha,
+            .end = end_rel++,
         });
+
+        builder.amem(1);
     }
 }
 
@@ -489,7 +496,7 @@ void SyntacticAnalyzerProcedures::command() {
         unsigned int col = lookahead->col;
         advance();
         expect(TokenType::OpenParOp, "Read command expects '('");
-        std::vector<ArgExpr> args = expression_list();
+        std::vector<ArgExpr> args = read_ids_list();
         expect(TokenType::CloseParOp, "Read command expects ')'");
         analisador_semantico.verificar_read(args, escopo_atual, line, col);
         return;
@@ -500,9 +507,10 @@ void SyntacticAnalyzerProcedures::command() {
         unsigned int col = lookahead->col;
         advance();
         expect(TokenType::OpenParOp, "Write command expects '('");
-        std::vector<ArgExpr> args = expression_list();
+        std::vector<ArgExpr> args = expression_list(true);
         expect(TokenType::CloseParOp, "Write command expects ')'");
         analisador_semantico.verificar_write(args, escopo_atual, line, col);
+
         return;
     }
 
@@ -590,6 +598,8 @@ void SyntacticAnalyzerProcedures::assign(const IdentInfo& id_info) {
 
     if (var_entry) {
         analisador_semantico.verificar_atribuicao(var_entry->tipo, expr_val.tipo, id_info.linha, id_info.col);
+
+        builder.armz(var_entry->end);
     }
 }
 
@@ -672,9 +682,19 @@ void SyntacticAnalyzerProcedures::conditional_command_1() {
     pop_symbol();
     record_snapshot("Popped then");
 
+    std::string s1 = builder.get_label();
+    std::string s2 = builder.get_label();
+
+    builder.dsvf(s1);
+
     pop_symbol();
     record_snapshot("Popped command");
     command();
+
+    builder
+        .dsvs(s2)
+        .nada(s1);
+    ;
 
     if (match(TokenType::ElseWord)) {
         stack_terminal(TokenType::ElseWord);
@@ -683,17 +703,32 @@ void SyntacticAnalyzerProcedures::conditional_command_1() {
         pop_symbol();
         record_snapshot("Popped command");
         command();
+
+        builder.nada(s2);
     }
 }
 
 void SyntacticAnalyzerProcedures::repetitive_command_1() {
+    std::string s1 = builder.get_label();
+    std::string s2 = builder.get_label();
+
+    builder.nada(s1);
+
     if (!expect(TokenType::WhileWord, "Malformed repetitive_command_1, missing while")) return;
     expression();
+
+    builder.dsvf(s2);
+
     if (!expect(TokenType::DoWord, "Malformed repetitive_command_1, missing do")) return;
     command();
+
+    builder
+        .dsvs(s1)
+        .nada(s2)
+    ;
 }
 
-std::vector<ArgExpr> SyntacticAnalyzerProcedures::expression_list() {
+std::vector<ArgExpr> SyntacticAnalyzerProcedures::expression_list(bool should_write) {
     std::vector<ArgExpr> list;
     stack_non_terminal(NonTerminal::Expression);
     record_snapshot("Stacked expression list");
@@ -701,6 +736,10 @@ std::vector<ArgExpr> SyntacticAnalyzerProcedures::expression_list() {
     pop_symbol();
     record_snapshot("Popped expression list");
     list.push_back(expression());
+
+    if (should_write) {
+        builder.impe();
+    }
 
     while (true) {
         if (!match(TokenType::CommaOp)) {
@@ -717,9 +756,65 @@ std::vector<ArgExpr> SyntacticAnalyzerProcedures::expression_list() {
         pop_symbol();
         record_snapshot("Popped expression");
         list.push_back(expression());
+
+        if (should_write) {
+            builder.impe();
+        }
     }
     return list;
 }
+
+std::vector<ArgExpr> SyntacticAnalyzerProcedures::read_ids_list() {
+    std::vector<ArgExpr> list;
+    
+    IdentInfo id_info = { lookahead->lexeme, lookahead->line, lookahead->col };
+
+    match(TokenType::Id);
+
+    SimboloEntry* s = analisador_semantico.verificar_uso_identificador(id_info.cadeia, escopo_atual, id_info.linha, id_info.col);            
+    if (s) {
+        list.push_back(ArgExpr{
+            .tipo = s->tipo,
+            .cadeia = id_info.cadeia,
+            .eh_id = true,
+            .linha = id_info.linha,
+            .col = id_info.col,
+        });
+
+        builder
+            .leit()
+            .armz(s->end)
+        ;
+    }
+
+    while (true) {
+        if (!match(TokenType::CommaOp)) {
+            break;
+        }
+
+        IdentInfo id_info = { lookahead->lexeme, lookahead->line, lookahead->col };
+        match(TokenType::Id);
+
+        SimboloEntry* s = analisador_semantico.verificar_uso_identificador(id_info.cadeia, escopo_atual, id_info.linha, id_info.col);            
+        if (s) {
+            list.push_back(ArgExpr{
+                .tipo = s->tipo,
+                .cadeia = id_info.cadeia,
+                .eh_id = true,
+                .linha = id_info.linha,
+                .col = id_info.col,
+            });
+
+            builder
+                .leit()
+                .armz(s->end)
+            ;
+        }
+    }
+
+    return list;
+}
+
 
 ArgExpr SyntacticAnalyzerProcedures::expression() {
     stack_non_terminal(NonTerminal::SimpleExpression);
@@ -736,11 +831,25 @@ ArgExpr SyntacticAnalyzerProcedures::expression() {
 
         pop_symbol();
         record_snapshot("Popped relation");
-        relation();
+        TokenType rel = relation();
 
         pop_symbol();
         record_snapshot("Popped simple_expression");
         ArgExpr right = simple_expression();
+
+        if (rel == TokenType::LessEqualOp) {
+            builder.cmeg();
+        } else if (rel == TokenType::LessOp) {
+            builder.cmme();
+        } else if (rel == TokenType::GreaterEqualOp) {
+            builder.cmag();
+        } else if (rel == TokenType::GreaterOp) {
+            builder.cmma();
+        } else if (rel == TokenType::DiffOp) {
+            builder.cmdg();
+        } else if (rel == TokenType::EqualOp) {
+            builder.cmig();
+        }
 
         return ArgExpr{ .tipo = "boolean", .cadeia = "", .eh_id = false, .linha = left.linha, .col = left.col };
     }
@@ -750,6 +859,8 @@ ArgExpr SyntacticAnalyzerProcedures::expression() {
 ArgExpr SyntacticAnalyzerProcedures::simple_expression() {
     stack_non_terminal(NonTerminal::Term);
     bool has_sign = false;
+    bool invert = false;
+
     if (match(TokenType::AddOp)) {
         has_sign = true;
         stack_terminal(TokenType::AddOp);
@@ -764,11 +875,15 @@ ArgExpr SyntacticAnalyzerProcedures::simple_expression() {
 
         pop_symbol();
         record_snapshot("Popped SubOp");
+
+        invert = true;
     }
 
     pop_symbol();
     record_snapshot("Popped term");
     ArgExpr current = term();
+
+    if (invert) builder.invr();
 
     while (true) {
         if (!lookahead.has_value()) break;
@@ -801,6 +916,7 @@ ArgExpr SyntacticAnalyzerProcedures::simple_expression() {
 
             if (prev_type == TokenType::OrWord) {
                 current = ArgExpr{ .tipo = "boolean", .cadeia = "", .eh_id = false, .linha = current.linha, .col = current.col };
+                builder.disj();
             } else {
                 if (current.tipo == "real" || next_term.tipo == "real") {
                     current.tipo = "real";
@@ -808,6 +924,12 @@ ArgExpr SyntacticAnalyzerProcedures::simple_expression() {
                     current.tipo = "int";
                 }
                 current.eh_id = false;
+            
+                if (prev_type == TokenType::AddOp) {
+                    builder.soma();
+                } else if(prev_type == TokenType::SubOp) {
+                    builder.subt();
+                }
             }
         } else {
             break;
@@ -859,8 +981,12 @@ ArgExpr SyntacticAnalyzerProcedures::term() {
             if (prev_type == TokenType::DivWord) {
                 current.tipo = analisador_semantico.verificar_operacao_divisao(current.tipo, next_factor.tipo, op_line, op_col);
                 current.eh_id = false;
+
+                builder.divi();
             } else if (prev_type == TokenType::AndWord) {
                 current = ArgExpr{ .tipo = "boolean", .cadeia = "", .eh_id = false, .linha = current.linha, .col = current.col };
+            
+                builder.conj();
             } else if (prev_type == TokenType::MulOp) {
                 if (current.tipo == "real" || next_factor.tipo == "real") {
                     current.tipo = "real";
@@ -868,6 +994,8 @@ ArgExpr SyntacticAnalyzerProcedures::term() {
                     current.tipo = "int";
                 }
                 current.eh_id = false;
+
+                builder.mult();
             }
         } else {
             break;
@@ -885,13 +1013,23 @@ bool SyntacticAnalyzerProcedures::is_relation() {
             peek(TokenType::GreaterOp));
 }
 
-void SyntacticAnalyzerProcedures::relation() {
-    if (match(TokenType::EqualOp)) return;
-    if (match(TokenType::DiffOp)) return;
-    if (match(TokenType::LessOp)) return;
-    if (match(TokenType::LessEqualOp)) return;
-    if (match(TokenType::GreaterEqualOp)) return;
-    expect(TokenType::GreaterOp, "Expect a valid relation");
+TokenType SyntacticAnalyzerProcedures::relation() {
+    const TokenType curr_type = lookahead->type;
+
+    switch (curr_type) {
+        case TokenType::EqualOp:
+        case TokenType::DiffOp:
+        case TokenType::LessOp:
+        case TokenType::LessEqualOp:
+        case TokenType::GreaterEqualOp:
+        case TokenType::GreaterOp:
+            advance();
+            return curr_type;
+
+        default:
+            enqueue_error("Expect a valid relation");
+            return TokenType::UNK;
+    }
 }
 
 ArgExpr SyntacticAnalyzerProcedures::factor() {
@@ -903,12 +1041,16 @@ ArgExpr SyntacticAnalyzerProcedures::factor() {
         res.eh_id = false;
         res.tipo = (res.cadeia.find('.') != std::string::npos) ? "real" : "int";
 
+        int n = std::stoi(lookahead->lexeme);
+
         match(TokenType::Num);
         stack_terminal(TokenType::Num);
         record_snapshot("Stacked factor");
 
         pop_symbol();
         record_snapshot("Popped number");
+
+        builder.crct(n);
         return res;
     } else if (peek(TokenType::OpenParOp)) {
         match(TokenType::OpenParOp);
@@ -941,6 +1083,8 @@ ArgExpr SyntacticAnalyzerProcedures::factor() {
         pop_symbol();
         record_snapshot("Popped factor");
         factor();
+
+        builder.nega();
         return ArgExpr{ .tipo = "boolean", .cadeia = "", .eh_id = false };
     } else if (lookahead.has_value() && (lookahead->type == TokenType::Id || lookahead->type == TokenType::FalseWord || lookahead->type == TokenType::TrueWord)) {
         ArgExpr res;
@@ -951,6 +1095,13 @@ ArgExpr SyntacticAnalyzerProcedures::factor() {
         if (lookahead->type == TokenType::TrueWord || lookahead->type == TokenType::FalseWord) {
             res.tipo = "boolean";
             res.eh_id = false;
+            
+            if (lookahead->type == TokenType::TrueWord) {
+                builder.crct(1);
+            } else {
+                builder.crct(0);
+            }
+
             match(lookahead->type);
         } else {
             res.eh_id = true;
@@ -958,7 +1109,14 @@ ArgExpr SyntacticAnalyzerProcedures::factor() {
             match(TokenType::Id);
 
             SimboloEntry* s = analisador_semantico.verificar_uso_identificador(id_info.cadeia, escopo_atual, id_info.linha, id_info.col);
-            res.tipo = s ? s->tipo : "desconhecido";
+            
+            if (s) {
+                res.tipo = s->tipo;
+
+                builder.crvl(s->end);
+            } else {
+                res.tipo = "desconhecido";
+            }
         }
 
         stack_non_terminal(NonTerminal::Variable);
@@ -1042,3 +1200,7 @@ const std::unordered_map<TokenType, std::string> SyntacticAnalyzerProcedures::te
     { TokenType::ReadWord, "read" },
     { TokenType::WriteWord, "write" },
 };
+
+std::vector<Command> SyntacticAnalyzerProcedures::get_commands() const {
+    return builder.get_commands();
+}
