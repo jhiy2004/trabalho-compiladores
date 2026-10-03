@@ -272,3 +272,12 @@ std::vector<Command> generate_example2_builder() {
     return builder.get_commands();
 }
 
+std::string program_to_string(const std::vector<Command> cmds) {
+    std::stringstream ss;
+
+    for (const auto& cmd : cmds) {
+        ss << cmd << "\n";
+    }
+
+    return ss.str();
+}

@@ -1,0 +1,20 @@
+program teste;
+
+int x, y, z;
+
+begin
+  read(y, z);
+  x := 0;
+  x := x + z * (10 div y + 1);
+  write(x, y, z);
+  if x > 0 then
+    if y > 0 then
+      y := x * y
+    else
+      y := y + x
+  else
+    if y > 0 then
+      y := -y
+    else
+      y := y + z
+end.

@@ -226,7 +226,7 @@ public:
 
     CodeBuilder& nada(const std::string& label) {
         commands.emplace_back(Command{Command::NADA});
-        label_to_pos[label] = commands.size() - 1;
+        label_to_pos[label] = static_cast<int>(commands.size()) - 1;
         return *this;
     }
 
@@ -279,13 +279,16 @@ public:
         return "L" + std::to_string(count++);
     }
 
-    std::vector<Command> get_commands() {
+    std::vector<Command> get_commands() const {
         std::vector<Command> ans(commands.size());
-        for (int i{}; i < commands.size(); ++i) {
-            Command& c{commands[i]};
-            if (c.is_jump()) {
-                c.arg = label_to_pos[*c.dst];
+
+        for (size_t i{}; i < commands.size(); ++i) {
+            Command c{commands[i]};
+
+            if (c.is_jump() && c.dst) {
+                c.arg = label_to_pos.at(*c.dst);
             }
+
             ans[i] = c;
         }
 

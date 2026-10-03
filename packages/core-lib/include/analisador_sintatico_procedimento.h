@@ -3,6 +3,7 @@
 #include "compilador_lalg.h"
 #include "tabela_simbolos.h"
 #include "analisador_semantico.h"
+#include "command.h"
 #include <queue>
 #include <stack>
 
@@ -72,6 +73,8 @@ public:
 
     void print_current_lexeme();
 
+    std::vector<Command> get_commands() const;
+
 private:
     void enqueue_error(std::string_view message);
     void stack_non_terminal(NonTerminal nt);
@@ -110,12 +113,13 @@ private:
     void conditional_command_1();
     void repetitive_command_1();
 
-    std::vector<ArgExpr> expression_list();
+    std::vector<ArgExpr> expression_list(bool should_write = false);
+    std::vector<ArgExpr> read_ids_list();
 
     ArgExpr expression();
     ArgExpr simple_expression();
     ArgExpr term();
-    void relation();
+    TokenType relation();
     ArgExpr factor();
 
     LexicalAnalysisLALG _lexical;
@@ -127,6 +131,8 @@ private:
     TabelaSimbolos tabela_simbolos;
     AnalisadorSemantico analisador_semantico;
     std::string escopo_atual{"global"};
+    CodeBuilder builder;
+    int end_rel{};
 
     static const std::unordered_map<NonTerminal, std::string> non_terminals;
     static const std::unordered_map<TokenType, std::string> terminals;

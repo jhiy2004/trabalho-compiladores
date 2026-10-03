@@ -54,8 +54,36 @@ export type SnapshotRow = {
   action: string;
 };
 
+export type SymbolTableApiEntry = {
+  cadeia: string;
+  token: string;
+  categoria: string;
+  tipo: string;
+  valor?: string;
+  escopo: string;
+  utilizada: boolean;
+  linha: number;
+  parametros?: Array<{
+    cadeia: string;
+    tipo: string;
+    por_referencia: boolean;
+  }>;
+};
+
+export type SemanticErrorApi = {
+  mensagem: string;
+  linha: number;
+  col: number;
+  tipo_erro: number;
+};
+
 export type ParseResponse = {
   symbols?: ParseStackSymbolRow[];
   errors?: ParseErrorRow[];
   snapshots?: SnapshotRow[];
+  symbolTable?: SymbolTableApiEntry[];
+  semanticErrors?: SemanticErrorApi[];
+  mepaCommands?: string[];
+  mepaCode?: string;
 };
+

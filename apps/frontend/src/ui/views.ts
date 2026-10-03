@@ -1,9 +1,9 @@
-export type ViewKey = "code" | "lex" | "syntax" | "semantic" | "symbols";
+export type ViewKey = "code" | "lex" | "syntax" | "symbolsAndSemantic" | "mepa";
 
 export const VIEW_LABEL: Record<ViewKey, string> = {
   code: "Código",
   lex: "Análise Léxica",
-  symbols: "Tabela de Símbolos",
   syntax: "Análise Sintática",
-  semantic: "Análise Semântica",
-};
+  symbolsAndSemantic: "Tabela de Símbolos & Semântica",
+  mepa: "Código MEPA",
+};
