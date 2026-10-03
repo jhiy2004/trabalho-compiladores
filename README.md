@@ -22,26 +22,26 @@ A gramática abaixo descreve a sintaxe da linguagem **LALG** utilizando EBNF.
 ```ebnf
 <programa> ::= program <identificador> ; <bloco>.
 
-<bloco> ::= [<declaração de variáveis>]
-            [<declaração de subrotinas>]
+<bloco> ::= [<declaracao de variaveis>]
+            [<declaracao de subrotinas>]
             <comando composto>
 ```
 
 ### 2. Declarações
 
 ```ebnf
-<declaração de variáveis> ::= <tipo> <lista de identificadores>
+<declaração de variaveis> ::= <tipo> <lista de identificadores>
 <lista de identificadores> ::= <identificador> {, <identificador>}
 
-<declaração de subrotinas> ::= {<declaração de procedimento> ;}
+<declaraçao de subrotinas> ::= {<declaracao de procedimento> ;}
 
-<declaração de procedimento> ::=
-    procedure <identificador> [<parâmetros formais>] ; <bloco>
+<declaraçao de procedimento> ::=
+    procedure <identificador> [<parametros formais>] ; <bloco>
 
-<parâmetros formais> ::=
-    ( <seção de parâmetros formais> { ; <seção de parâmetros formais>} )
+<parametros formais> ::=
+    ( <secao de parametros formais> { ; <secao de parametros formais>} )
 
-<seção de parâmetros formais> ::=
+<seçao de parametros formais> ::=
     [var] <lista de identificadores> : <identificador>
 ```
 
@@ -59,22 +59,22 @@ Todos os identificadores devem ser declarados antes de serem utilizados.
 <comando composto> ::= begin <comando> { ; <comando> } end
 
 <comando> ::=
-    <atribuição>
+    <atribuicao>
   | <chamada de procedimento>
   | <comando composto>
   | <comando condicional>
   | <comando repetitivo>
 
-<atribuição> ::= <variável> := <expressão>
+<atribuicao> ::= <variavel> := <expressao>
 
 <chamada de procedimento> ::=
-    <identificador> [ ( <lista de expressões> ) ]
+    <identificador> [ ( <lista de expressoes> ) ]
 
 <comando condicional> ::=
-    if <expressão> then <comando> [else <comando>]
+    if <expressao> then <comando> [else <comando>]
 
 <comando repetitivo> ::=
-    while <expressão> do <comando>
+    while <expressao> do <comando>
 ```
 
 `read` e `write` são procedimentos pré-declarados para entrada e saída:
@@ -89,24 +89,24 @@ write(e1, e2, ..., en)
 ### 4. Expressões
 
 ```ebnf
-<expressão> ::= <expressão simples> [<relação> <expressão simples>]
+<expressao> ::= <expressao simples> [<relaçao> <expressao simples>]
 
-<relação> ::= = | <> | < | <= | >= | >
+<relacao> ::= = | <> | < | <= | >= | >
 
-<expressão simples> ::=
+<expressao simples> ::=
     [+ | -] <termo> {(+ | - | or) <termo>}
 
 <termo> ::= <fator> {(* | div | and) <fator>}
 
 <fator> ::=
-    <variável>
+    <variavel>
   | <número>
-  | ( <expressão> )
+  | ( <expressao> )
   | not <fator>
 
-<variável> ::= <identificador> | <identificador> [ <expressão> ]
+<variavel> ::= <identificador> | <identificador> [ <expressao> ]
 
-<lista de expressões> ::= <expressão> {, <expressão>}
+<lista de expressoes> ::= <expressao> {, <expressao>}
 ```
 
 As expressões podem ser **inteiras ou booleanas**, e o compilador deve verificar seus tipos.
@@ -114,11 +114,11 @@ As expressões podem ser **inteiras ou booleanas**, e o compilador deve verifica
 ### 5. Números e identificadores
 
 ```ebnf
-<número> ::= <dígito> {<dígito>}
+<numero> ::= <digito> {<digito>}
 
-<dígito> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+<digito> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
-<identificador> ::= <letra> {<letra> | <dígito>}
+<identificador> ::= <letra> {<letra> | <digito>}
 
 <letra> ::= _ | a-z | A-Z
 ```
